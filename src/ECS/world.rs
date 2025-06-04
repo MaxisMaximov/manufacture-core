@@ -47,11 +47,6 @@ impl gmWorld{
         )
     }
 
-    #[cfg(query_data)]
-    pub fn fetch_query<'a, T: system::gmSystem>(&'a self) -> Query<'a, T::QUERY>{
-        Query::fetch(self)
-    }
-
     pub fn fetchRes<'a, T>(&'a self) -> Fetch<'a, T> where T: gmRes + 'static{
         Fetch::new(
             Ref::map(self.resources.get(T::RES_ID()).expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID())).as_ref().borrow(), |idkfa| idkfa.downcast_ref::<T>().unwrap())

@@ -4,7 +4,7 @@ use world::*;
 
 pub struct gmDispatchStage{
     systems: HashMap<&'static str, ()>,
-    inner: Vec<Box<dyn gmSysRun>>
+    inner: Vec<Box<dyn SystemWrapper>>
 }
 impl gmDispatchStage{
     pub fn new() -> Self{
@@ -14,19 +14,19 @@ impl gmDispatchStage{
         }
     }
 
-    pub fn withSys<T>(mut self) -> Self where T: gmSystem + 'static{
+    pub fn withSys<T>(mut self) -> Self where T: System + 'static{
         self.addSys::<T>();
         self
     }
 
-    pub fn addSys<T>(&mut self) where T: gmSystem + 'static{
+    pub fn addSys<T>(&mut self) where T: System + 'static{
         // The Dispatcher does the check if exists for us already so no need to check it
-        self.systems.insert(T::SYS_ID(), ());
+        self.systems.insert(T::ID, ());
         self.inner.push(Box::new(T::new()));
     }
 
-    pub fn checkSys<T>(&self) -> bool where T: gmSystem{
-        self.checkSysID(T::SYS_ID())
+    pub fn checkSys<T>(&self) -> bool where T: System{
+        self.checkSysID(T::ID)
     }
     
     pub fn checkSysID(&self, IN_id: &'static str) -> bool{
@@ -38,7 +38,7 @@ impl gmDispatchStage{
 
     pub fn dispatch(&mut self, IN_world: &mut gmWorld){
         for SYS in self.inner.iter_mut(){
-            SYS.executeNow(IN_world);
+            SYS.execute(IN_world);
         }
     }
 }

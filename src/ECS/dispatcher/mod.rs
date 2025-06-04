@@ -18,28 +18,28 @@ impl gmDispatcher{
         }
     }
 
-    pub fn withSys<T>(mut self) -> Self where T: gmSystem + 'static{
+    pub fn withSys<T>(mut self) -> Self where T: System + 'static{
         self.addSys::<T>();
         self
     }
 
-    pub fn addSys<T>(&mut self) where T: gmSystem + 'static{
+    pub fn addSys<T>(&mut self) where T: System + 'static{
         // Check if the system is registered already
-        if self.systems.contains_key(T::SYS_ID()){
-            panic!("ERROR: Attempted to override an existing system: {}", T::SYS_ID())
+        if self.systems.contains_key(T::ID){
+            panic!("ERROR: Attempted to override an existing system: {}", T::ID)
         }
 
         let mut w_nextStage: usize = 0;
         
         'CHECKSTAGE:{
             // Exit early if there's no dependencies
-            if T::sysDepends.is_empty(){
+            if T::DEPENDS.is_empty(){
                 break 'CHECKSTAGE;
             }
 
-            for DEPEND in T::sysDepends.iter(){
+            for DEPEND in T::DEPENDS.iter(){
                 // Check if such dependency exists
-                let STAGEID = self.systems.get(DEPEND).expect(&format!("ERROR: Dependency {} for system {} Is not registered", DEPEND, T::SYS_ID()));
+                let STAGEID = self.systems.get(DEPEND).expect(&format!("ERROR: Dependency {} for system {} Is not registered", DEPEND, T::ID));
                 if *STAGEID > w_nextStage{
                     w_nextStage = *STAGEID + 1
                 }
