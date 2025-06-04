@@ -89,12 +89,21 @@ pub type ReadStorage<'a, T: Component> = StorageRef<'a, T, Fetch<'a, T::STORAGE>
 #[allow(type_alias_bounds)]
 pub type WriteStorage<'a, T: Component> = StorageRef<'a, T, FetchMut<'a, T::STORAGE>>;
 
-pub(super) trait QueryData{
+/// # Query fetch trait
+/// Required for `Query` to know what to fetch from the World
+/// 
+/// It is implemented by default on `&` and `&mut` Component references, as well as Tuples up to 4 elements
+/// 
+/// The return type `Item` is typically the type the trait gets implemented on
+pub trait QueryData{
     type Item<'b>;
 
+    /// Fetch the data from the world
     fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a>;
 }
 
+/// # World Query
+/// Struct that queries the World and fetches the specified `QueryData`
 pub struct Query<'a, C: QueryData>{
     data: C::Item<'a>
 }
@@ -103,23 +112,6 @@ impl<'a, D: QueryData> Query<'a, D>{
         Self{
             data: D::fetch(World)
         }
-    }
-}
-
-// Empty impl as a way to not require `Query` from `gmSystem` trait yet
-impl QueryData for (){
-    type Item<'b> = ();
-
-    fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
-
-    }
-}
-
-impl<A: QueryData, B: QueryData> QueryData for (A, B){
-    type Item<'b> = (A::Item<'b>, B::Item<'b>);
-
-    fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World))
     }
 }
 
@@ -136,5 +128,33 @@ impl<T: Component> QueryData for &mut T{
 
     fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
         World.fetchMut()
+    }
+}
+
+
+impl QueryData for (){
+    type Item<'b> = ();
+
+    fn fetch<'a>(_World: &'a gmWorld) -> Self::Item<'a>{}
+}
+impl<A: QueryData, B: QueryData> QueryData for (A, B){
+    type Item<'b> = (A::Item<'b>, B::Item<'b>);
+
+    fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
+        (A::fetch(World), B::fetch(World))
+    }
+}
+impl<A: QueryData, B: QueryData, C: QueryData> QueryData for (A, B, C){
+    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>);
+
+    fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
+        (A::fetch(World), B::fetch(World), C::fetch(World))
+    }
+}
+impl<A: QueryData, B: QueryData, C: QueryData, D: QueryData> QueryData for (A, B, C, D){
+    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>);
+
+    fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
+        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World))
     }
 }
