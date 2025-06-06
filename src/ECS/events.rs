@@ -71,11 +71,9 @@ impl EventMap{
         // We have checks for valid ID and a backup Queue, so we can safely unwrap
         let queue = self.alt_buffer.get(T::EVENT_ID()).unwrap();
 
-        EventReader::new(
-            Ref::map(
-                queue.borrow(), 
-                |x| x.downcast_ref::<VecDeque<T>>().unwrap())
-        )
+        Ref::map(
+            queue.borrow(), 
+            |x| x.downcast_ref::<VecDeque<T>>().unwrap())
     }
     /// Get a Writer for an Event
     /// 
@@ -94,10 +92,8 @@ impl EventMap{
         // We have checks for valid ID and a backup Queue, so we can safely unwrap
         let queue = self.active_buffer.get(T::EVENT_ID()).unwrap();
 
-        EventWriter::new(
-            RefMut::map(
-                queue.borrow_mut(),
-                |x| x.downcast_mut::<VecDeque<T>>().unwrap())
-        )
+        RefMut::map(
+            queue.borrow_mut(),
+            |x| x.downcast_mut::<VecDeque<T>>().unwrap())
     }
 }

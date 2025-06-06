@@ -32,30 +32,31 @@ impl gmWorld{
         }
     }
 
-    pub fn fetch<'a, T>(&'a self) -> ReadStorage<'a, T> where T: Component + 'static{
-        ReadStorage::new(
-            Fetch::new(
-                Ref::map(self.components.get(T::ID).expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID)).as_ref().borrow(), |idkfa| &idkfa.downcast::<T>().inner)
-            )
-        )
+pub fn fetch<'a, T>(&'a self) -> Fetch<'a, T> where T: Component + 'static{
+        Ref::map(self.components.get(T::ID)
+        .expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID))
+        .as_ref().borrow(), 
+        |idkfa| &idkfa.downcast::<T>().inner)
     }
-    pub fn fetchMut<'a, T>(&'a self) -> WriteStorage<'a, T> where T: Component + 'static{
-        WriteStorage::new(
-            FetchMut::new(
-                RefMut::map(self.components.get(T::ID).expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID)).as_ref().borrow_mut(), |idkfa| &mut idkfa.downcast_mut::<T>().inner)
-            )
-        )
+pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static{
+        RefMut::map(self.components.get(T::ID)
+        .expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID))
+        .as_ref().borrow_mut(), 
+        |idkfa| &mut idkfa.downcast_mut::<T>().inner)
     }
 
-    pub fn fetchRes<'a, T>(&'a self) -> Fetch<'a, T> where T: gmRes + 'static{
-        Fetch::new(
-            Ref::map(self.resources.get(T::RES_ID()).expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID())).as_ref().borrow(), |idkfa| idkfa.downcast_ref::<T>().unwrap())
-        )
+    pub fn fetchRes<'a, T>(&'a self) -> FetchRes<'a, T> where T: gmRes + 'static{
+        Ref::map(
+            self.resources.get(T::RES_ID())
+            .expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID()))
+            .as_ref().borrow(), 
+            |idkfa| idkfa.downcast_ref::<T>().unwrap())
     }
-    pub fn fetchResMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: gmRes + 'static{
-        FetchMut::new(
-            RefMut::map(self.resources.get(T::RES_ID()).expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID())).as_ref().borrow_mut(), |idkfa| idkfa.downcast_mut::<T>().unwrap())
-        )
+    pub fn fetchResMut<'a, T>(&'a self) -> FetchResMut<'a, T> where T: gmRes + 'static{
+            RefMut::map(self.resources.get(T::RES_ID())
+            .expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID()))
+            .as_ref().borrow_mut(), 
+            |idkfa| idkfa.downcast_mut::<T>().unwrap())
     }
 
     pub fn fetchEventReader<'a, T>(&'a self) -> EventReader<'a, T> where T: gmEvent + 'static{
@@ -129,10 +130,10 @@ impl gmWorld{
         }
     }
     
-    pub fn fetchCommandWriter<'a>(&'a self) -> FetchMut<'a, Vec<Box<dyn gmCommand>>>{
-        FetchMut::new(
-            RefMut::map(self.commands.as_ref().borrow_mut(), |idkfa| idkfa),
-        )
+    pub fn fetchCommandWriter<'a>(&'a self) -> CommandWriter<'a>{
+            RefMut::map(
+                self.commands.as_ref().borrow_mut(), 
+                |idkfa| idkfa)
     }
 
     pub fn commandsExec(&mut self){

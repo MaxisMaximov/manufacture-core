@@ -3,91 +3,25 @@ use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
+
 use super::world::gmWorld;
 use super::*;
 
 use comp::Component;
 use events::gmEvent;
+use resource::gmRes;
+use commands::gmCommand;
 
-pub struct Fetch<'a, T>{
-    data: Ref<'a, T>,
-}
-impl<'a, T> Fetch<'a, T>{
-    pub fn new(IN_data: Ref<'a, T>) -> Self{
-        Self{
-            data: IN_data
-        }
-    }
-}
-impl<'a, T> Deref for Fetch<'a, T>{
-    type Target = T;
+pub type Fetch<'a, C: Component> = Ref<'a, C::STORAGE>;
+pub type FetchMut<'a, C: Component> = RefMut<'a, C::STORAGE>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-pub struct FetchMut<'a, T>{
-    data: RefMut<'a, T>
-}
-impl<'a, T> FetchMut<'a, T>{
-    pub fn new(IN_data: RefMut<'a, T>) -> Self{
-        Self{
-            data: IN_data
-        }
-    }
-}
-impl<'a, T> Deref for FetchMut<'a, T>{
-    type Target = T;
+pub type FetchRes<'a, R: gmRes> = Ref<'a, R>;
+pub type FetchResMut<'a, R: gmRes> = RefMut<'a, R>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-impl<'a, T> DerefMut for FetchMut<'a, T>{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
-    }
-}
+pub type EventReader<'a, E: gmEvent> = Ref<'a, VecDeque<E>>;
+pub type EventWriter<'a, E: gmEvent> = RefMut<'a, VecDeque<E>>;
 
-// So I'm thinking
-// This thing is basically a wrapper, over a wrapper (Fetch/Mut), over another wrapper (Ref/Mut)
-// And they all 3 implement Derefs, however Ref/Mut use it for safety stuff, Fetch/Mut and StorageRef only use it to give direct access to the storage/resource
-// So in the end they both don't provide anything useful other than type clarity to what's a component and what's a resource fetch
-// Also I'm not sure if Deref³ is a good idea for performance
-pub struct StorageRef<'a, T: Component, D>{
-    data: D,
-    _phantom: PhantomData<&'a T>
-} 
-impl<'a, T: Component, D> StorageRef<'a, T, D>{
-    pub fn new(IN_data: D) -> Self{
-        Self{
-            data: IN_data,
-            _phantom: PhantomData,
-        }
-    }
-}
-impl<'a, T: Component, D> Deref for StorageRef<'a, T, D>{
-    type Target = D;
-
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-impl<'a, T: Component, D> DerefMut for StorageRef<'a, T, D>{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
-    }
-}
-
-#[allow(type_alias_bounds)]
-pub type EventReader<'a, T: gmEvent> = Fetch<'a, VecDeque<T>>;
-#[allow(type_alias_bounds)]
-pub type EventWriter<'a, T: gmEvent> = FetchMut<'a, VecDeque<T>>;
-
-#[allow(type_alias_bounds)]
-pub type ReadStorage<'a, T: Component> = StorageRef<'a, T, Fetch<'a, T::STORAGE>>;
-#[allow(type_alias_bounds)]
-pub type WriteStorage<'a, T: Component> = StorageRef<'a, T, FetchMut<'a, T::STORAGE>>;
+pub type CommandWriter<'a> = RefMut<'a, Vec<Box<dyn gmCommand>>>;
 
 /// # Query fetch trait
 /// Required for `Query` to know what to fetch from the World
@@ -128,18 +62,18 @@ impl<'a, C: QueryData> DerefMut for Query<'a, C>{
 }
 
 impl<T:Component> QueryData for &T{
-    type Item<'b> = ReadStorage<'b, T>;
+    type Item<'b> = Ref<'b, T::STORAGE>;
 
     fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
-        World.fetch()
+        World.fetch::<T>()
     }
 }
 
 impl<T: Component> QueryData for &mut T{
-    type Item<'b> = WriteStorage<'b, T>;
+    type Item<'b> = RefMut<'b, T::STORAGE>;
 
     fn fetch<'a>(World: &'a gmWorld) -> Self::Item<'a> {
-        World.fetchMut()
+        World.fetchMut::<T>()
     }
 }
 
