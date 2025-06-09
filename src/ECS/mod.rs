@@ -1,11 +1,9 @@
 #![allow(dead_code)]
 use std::collections::{HashMap, BTreeMap};
 use std::time;
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::Any;
 use crossterm::event;
-use std::ops::{Deref, DerefMut};
 
 pub mod comp;
 pub mod storage;

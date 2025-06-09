@@ -14,10 +14,10 @@ use commands::gmCommand;
 pub struct gmWorld{
     gmObjs: BTreeMap<usize, Entity>,
     next_free: BTreeSet<usize>,
-    components: HashMap<&'static str, Rc<RefCell<dyn gmStorageDrop>>>,
-    resources: HashMap<&'static str, Rc<RefCell<dyn Any>>>,
+    components: HashMap<&'static str, RefCell<Box<dyn gmStorageDrop>>>,
+    resources: HashMap<&'static str, RefCell<Box<dyn Any>>>,
     events: UnsafeCell<EventMap>,
-    commands: Rc<RefCell<Vec<Box<dyn gmCommand>>>>
+    commands: RefCell<Vec<Box<dyn gmCommand>>>
 }
 impl gmWorld{
 
@@ -28,20 +28,20 @@ impl gmWorld{
             components: HashMap::new(),
             resources: HashMap::new(),
             events: UnsafeCell::new(EventMap::new()),
-            commands: Rc::new(RefCell::new(Vec::new()))
+            commands: RefCell::new(Vec::new())
         }
     }
 
 pub fn fetch<'a, T>(&'a self) -> Fetch<'a, T> where T: Component + 'static{
         Ref::map(self.components.get(T::ID)
         .expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID))
-        .as_ref().borrow(), 
+        .borrow(), 
         |idkfa| &idkfa.downcast::<T>().inner)
     }
 pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static{
         RefMut::map(self.components.get(T::ID)
         .expect(&format!("ERROR: Tried to fetch an unregistered component: {}", T::ID))
-        .as_ref().borrow_mut(), 
+        .borrow_mut(), 
         |idkfa| &mut idkfa.downcast_mut::<T>().inner)
     }
 
@@ -49,13 +49,13 @@ pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static
         Ref::map(
             self.resources.get(T::RES_ID())
             .expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID()))
-            .as_ref().borrow(), 
+            .borrow(), 
             |idkfa| idkfa.downcast_ref::<T>().unwrap())
     }
     pub fn fetchResMut<'a, T>(&'a self) -> FetchResMut<'a, T> where T: gmRes + 'static{
             RefMut::map(self.resources.get(T::RES_ID())
             .expect(&format!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID()))
-            .as_ref().borrow_mut(), 
+            .borrow_mut(), 
             |idkfa| idkfa.downcast_mut::<T>().unwrap())
     }
 
@@ -81,9 +81,9 @@ pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static
         match self.components.entry(T::ID){
             Entry::Occupied(_) => panic!("ERROR: Attempted to override an existing component: {}", T::ID),
             Entry::Vacant(ENTRY) => ENTRY.insert(
-                    Rc::new(
-                        RefCell::new(
-                            gmStorageContainer::<T>{inner: T::STORAGE::new()})))
+                RefCell::new(
+                    Box::new(
+                    gmStorageContainer::<T>{inner: T::STORAGE::new()})))
         };
     }
     pub fn unRegisterComp<T>(&mut self) where T: Component + 'static{
@@ -94,7 +94,7 @@ pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static
         use std::collections::hash_map::Entry;
         match self.resources.entry(T::RES_ID()){
             Entry::Occupied(_) => panic!("ERROR: Attempted to override an existing resource: {}", T::RES_ID()),
-            Entry::Vacant(ENTRY) => ENTRY.insert(Rc::new(RefCell::new(T::new())))
+            Entry::Vacant(ENTRY) => ENTRY.insert(RefCell::new(Box::new(T::new())))
         };
     }
     pub fn unRegisterRes<T>(&mut self) where T: gmRes + 'static{
@@ -122,7 +122,7 @@ pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static
         match self.gmObjs.remove(&IN_id){
             Some(_) => {
                 for COMP in self.components.values_mut(){
-                    COMP.as_ref().borrow_mut().drop(&IN_id);
+                    COMP.borrow_mut().as_mut().drop(&IN_id);
                 }
                 return Ok(())
             }
@@ -132,13 +132,13 @@ pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static
     
     pub fn fetchCommandWriter<'a>(&'a self) -> CommandWriter<'a>{
             RefMut::map(
-                self.commands.as_ref().borrow_mut(), 
+                self.commands.borrow_mut(), 
                 |idkfa| idkfa)
     }
 
     pub fn commandsExec(&mut self){
         loop{
-            let idkfa = self.commands.as_ref().borrow_mut().pop();
+            let idkfa = self.commands.borrow_mut().pop();
             match idkfa{
                 Some(COMMAND) => COMMAND.execute(self),
                 None => break,
