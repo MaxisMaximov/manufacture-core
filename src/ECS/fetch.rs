@@ -9,14 +9,14 @@ use super::*;
 
 use comp::Component;
 use events::Event;
-use resource::gmRes;
+use resource::Resource;
 use commands::gmCommand;
 
 pub type Fetch<'a, C: Component> = Ref<'a, C::STORAGE>;
 pub type FetchMut<'a, C: Component> = RefMut<'a, C::STORAGE>;
 
-pub type FetchRes<'a, R: gmRes> = Ref<'a, R>;
-pub type FetchResMut<'a, R: gmRes> = RefMut<'a, R>;
+pub type FetchRes<'a, R: Resource> = Ref<'a, R>;
+pub type FetchResMut<'a, R: Resource> = RefMut<'a, R>;
 
 pub type EventReader<'a, E: Event> = Ref<'a, VecDeque<E>>;
 pub type EventWriter<'a, E: Event> = RefMut<'a, VecDeque<E>>;

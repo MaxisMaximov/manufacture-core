@@ -15,7 +15,7 @@ pub struct gmWorld{
     gmObjs: BTreeMap<usize, Entity>,
     next_free: BTreeSet<usize>,
     components: HashMap<&'static str, RefCell<Box<dyn StorageWrapper>>>,
-    resources: HashMap<&'static str, RefCell<Box<dyn Any>>>,
+    resources: HashMap<&'static str, RefCell<Box<dyn ResourceWrapper>>>,
     events: UnsafeCell<EventMap>,
     commands: RefCell<Vec<Box<dyn gmCommand>>>
 }
@@ -55,25 +55,25 @@ impl gmWorld{
             |idkfa| &mut **idkfa.downcast_mut::<T>().unwrap())
     }
 
-    pub fn fetchRes<'a, T>(&'a self) -> FetchRes<'a, T> where T: gmRes + 'static{
+    pub fn fetchRes<'a, T>(&'a self) -> FetchRes<'a, T> where T: Resource + 'static{
         // Check if we have such Resource registered already
-        if !self.resources.contains_key(T::RES_ID()){
+        if !self.resources.contains_key(T::ID){
             // Same as with Component fetch
-            panic!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID())
+            panic!("ERROR: Tried to fetch an unregistered resource: {}", T::ID)
         }
 
         Ref::map(
-            self.resources.get(T::RES_ID()).unwrap().borrow(), 
+            self.resources.get(T::ID).unwrap().borrow(), 
             |idkfa| idkfa.downcast_ref::<T>().unwrap())
     }
-    pub fn fetchResMut<'a, T>(&'a self) -> FetchResMut<'a, T> where T: gmRes + 'static{
+    pub fn fetchResMut<'a, T>(&'a self) -> FetchResMut<'a, T> where T: Resource + 'static{
         // Same as above
-        if !self.resources.contains_key(T::RES_ID()){
-            panic!("ERROR: Tried to fetch an unregistered resource: {}", T::RES_ID())
+        if !self.resources.contains_key(T::ID){
+            panic!("ERROR: Tried to fetch an unregistered resource: {}", T::ID)
         }
 
         RefMut::map(
-            self.resources.get(T::RES_ID()).unwrap().borrow_mut(), 
+            self.resources.get(T::ID).unwrap().borrow_mut(), 
             |idkfa| idkfa.downcast_mut::<T>().unwrap())
     }
 
@@ -107,15 +107,15 @@ impl gmWorld{
         self.components.remove(T::ID);
     }
 
-    pub fn registerRes<T>(&mut self) where T: gmRes + 'static{
-        if !self.resources.contains_key(T::RES_ID()){
-            panic!("ERROR: Attempted to override an existing resource: {}", T::RES_ID())
+    pub fn registerRes<T>(&mut self) where T: Resource + 'static{
+        if !self.resources.contains_key(T::ID){
+            panic!("ERROR: Attempted to override an existing resource: {}", T::ID)
         }
 
-        self.resources.insert(T::RES_ID(), RefCell::new(Box::new(T::new())));
+        self.resources.insert(T::ID, RefCell::new(Box::new(T::new())));
     }
-    pub fn unRegisterRes<T>(&mut self) where T: gmRes + 'static{
-        self.resources.remove(T::RES_ID());
+    pub fn unRegisterRes<T>(&mut self) where T: Resource + 'static{
+        self.resources.remove(T::ID);
     }
 
     pub fn registerEvent<T>(&mut self) where T: Event + 'static{
