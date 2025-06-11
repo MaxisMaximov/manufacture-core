@@ -14,7 +14,7 @@ use commands::gmCommand;
 pub struct gmWorld{
     gmObjs: BTreeMap<usize, Entity>,
     next_free: BTreeSet<usize>,
-    components: HashMap<&'static str, RefCell<Box<dyn gmStorageDrop>>>,
+    components: HashMap<&'static str, RefCell<Box<dyn StorageWrapper>>>,
     resources: HashMap<&'static str, RefCell<Box<dyn Any>>>,
     events: UnsafeCell<EventMap>,
     commands: RefCell<Vec<Box<dyn gmCommand>>>
@@ -42,7 +42,7 @@ impl gmWorld{
         Ref::map(
             // Unwrap: We have a check for an invalid Component earlier
             self.components.get(T::ID).unwrap().borrow(), 
-            |idkfa| &idkfa.downcast::<T>().inner)
+            |idkfa| &**idkfa.downcast_ref::<T>().unwrap())
     }
     pub fn fetchMut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component + 'static{
         // Same as above
@@ -52,7 +52,7 @@ impl gmWorld{
 
         RefMut::map(
             self.components.get(T::ID).unwrap().borrow_mut(), 
-            |idkfa| &mut idkfa.downcast_mut::<T>().inner)
+            |idkfa| &mut **idkfa.downcast_mut::<T>().unwrap())
     }
 
     pub fn fetchRes<'a, T>(&'a self) -> FetchRes<'a, T> where T: gmRes + 'static{
@@ -101,7 +101,7 @@ impl gmWorld{
 
         self.components.insert(
             T::ID, 
-            RefCell::new(Box::new(gmStorageContainer::<T>{inner: T::STORAGE::new()})));
+            RefCell::new(Box::new(StorageContainer::<T>::new())));
     }
     pub fn unRegisterComp<T>(&mut self) where T: Component + 'static{
         self.components.remove(T::ID);
@@ -139,7 +139,7 @@ impl gmWorld{
         match self.gmObjs.remove(&IN_id){
             Some(_) => {
                 for COMP in self.components.values_mut(){
-                    COMP.borrow_mut().as_mut().drop(&IN_id);
+                    COMP.borrow_mut().as_mut().remove(IN_id);
                 }
                 return Ok(())
             }

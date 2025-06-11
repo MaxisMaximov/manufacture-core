@@ -1,108 +1,100 @@
-use super::*;
+use std::ops::{Deref, DerefMut};
 
-use comp::Component;
+use super::comp::Component;
 
-pub trait gmStorage<T: Component>: Any{
+/// # Component Storage trait
+/// Specifies some basic functions for the storage to do
+pub trait Storage<T: Component>{
+    /// Create a new specified Storage for this component
     fn new() -> Self;
-    fn get(&self, IN_id: &usize) -> Option<&T>;
-    fn get_mut(&mut self, IN_id: &usize) -> Option<&mut T>;
-    fn insert(&mut self, IN_id: usize, IN_item: T);
-    fn remove(&mut self, IN_id: &usize) -> Option<T>;
-    fn iter(&self) -> impl Iterator;
-    fn iter_mut(&mut self) -> impl Iterator;
-}
-pub trait gmStorageDrop: Any{
-    fn drop(&mut self, IN_id: &usize);
+    /// Insert a Component for an entity into this storage
+    fn insert(&mut self, Index: usize, Comp: T);
+    /// Remove the specified Entity's Component from this storage
+    fn remove(&mut self, Index: usize);
+    /// Get a reference to the specified Entity's Component from this storage
+    fn get(&self, Index: &usize) -> Option<&T>;
+    /// Get a mutable reference to the specified ENtity's Component from this storage
+    fn get_mut(&mut self, Index: &usize) -> Option<&mut T>;
 }
 
-impl dyn gmStorageDrop{
-    pub fn downcast<T: Component>(&self) -> &gmStorageContainer<T>{
-        unsafe {&*(self as *const dyn gmStorageDrop as *const gmStorageContainer<T>)}
+/// # Storage trait Container
+/// Wraps a Component's `STORAGE` to safely store it within the world
+/// 
+/// To get the underlying `STORAGE`, use a dereference
+pub struct StorageContainer<T: Component>{
+    inner: T::STORAGE
+}
+impl<T: Component> Deref for StorageContainer<T>{
+    type Target = T::STORAGE;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
-    pub fn downcast_mut<T: Component>(&mut self) -> &mut gmStorageContainer<T>{
-        unsafe {&mut *(self as *mut dyn gmStorageDrop as *mut gmStorageContainer<T>)}
+} 
+impl<T: Component> DerefMut for StorageContainer<T>{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
-
-// Necessary abstraction for `gmStorageDrop` to be used
-pub struct gmStorageContainer<T:Component>{
-    pub inner: T::STORAGE
-}
-impl<T: Component + 'static> gmStorageDrop for gmStorageContainer<T>{
-    fn drop(&mut self, IN_id: &usize) {
-        self.inner.remove(IN_id);
-    }
-}
-
-
-pub struct denseVecStorage<T>{
-    pub proxyMap: HashMap<usize, usize>,
-    pub inner: Vec<denseVecEntry<T>>
-}
-impl<T: Component + 'static> gmStorage<T> for denseVecStorage<T>{
-
-    fn new() -> Self {
+impl<T: Component> StorageContainer<T>{
+    pub fn new() -> Self{
         Self{
-            proxyMap: HashMap::new(),
-            inner: Vec::new()
+            inner: T::STORAGE::new()
         }
     }
 
-    fn get(&self, IN_id: &usize) -> Option<&T> {
-        match self.proxyMap.get(&IN_id){
-            Some(ID) => {
-                Some(&self.inner.get(*ID).unwrap().val)
-            },
-            None => None,
-        }
-    }
-
-    fn get_mut(&mut self, IN_id: &usize) -> Option<&mut T> {
-        match self.proxyMap.get(&IN_id){
-            Some(ID) => {
-                Some(&mut self.inner.get_mut(*ID).unwrap().val)
-            },
-            None => None,
-        }
-    }
-
-    fn insert(&mut self, IN_id: usize, IN_item: T) {
-        if self.proxyMap.contains_key(&IN_id){return}
-
-        self.proxyMap.insert(IN_id, self.inner.len()); // Vec length is always the next free index
-        self.inner.push(
-            denseVecEntry{
-                id: IN_id,
-                val: IN_item,
-            }
-        );
-    }
-
-    fn remove(&mut self, IN_id: &usize) -> Option<T> {
-        
-        if let Some(INDEX) = self.proxyMap.remove(&IN_id){
-
-            if INDEX == self.inner.len() - 1{
-                return Some(self.inner.pop().unwrap().val)
-            }
-
-            *self.proxyMap.get_mut(&self.inner.last().unwrap().id).unwrap() = INDEX;
-
-            return Some(self.inner.swap_remove(INDEX).val);
-        }
-        None
-
-    }
-
-    fn iter(&self) -> impl Iterator {
-        self.inner.iter()
-    }
-
-    fn iter_mut(&mut self) -> impl Iterator {
-        self.inner.iter_mut()
+    pub fn comp_id(&self) -> &'static str{
+        T::ID
     }
 }
-pub struct denseVecEntry<T>{
-    pub id: usize,
-    pub val: T
+
+/// # Storage Container Wrapper trait
+/// A dyn-compatible wrapper for StorageContainer for the World to store with
+/// 
+/// Provides ability to remove a component of the specified entity for easier cleanup,  
+/// as well as Downcast methods to get the underlying Containers
+pub trait StorageWrapper{
+    /// Remove a specified Entity's component from this storage
+    fn remove(&mut self, Index: usize);
+    /// Get the underlying Container's Component ID
+    fn comp_id(&self) -> &'static str;
+}
+
+impl<T: Component> StorageWrapper for StorageContainer<T>{
+    fn remove(&mut self, Index: usize){
+        Storage::remove(&mut self.inner, Index);
+    }
+
+    fn comp_id(&self) -> &'static str {
+        T::ID
+    }
+}
+
+impl dyn StorageWrapper{
+    /// Downcast to a reference of a StorageContainer of the `T` component type
+    /// 
+    /// Returns None if the ID of the `T` component does not match the underlying Container's Component ID
+    pub fn downcast_ref<T: Component>(&self) -> Option<&StorageContainer<T>>{
+        if T::ID == self.comp_id(){
+            // SAFETY: We check if the Component IDs match on the line above
+            Some(unsafe {
+                &*(self as *const dyn StorageWrapper as *const StorageContainer<T>)
+            })
+        }else{
+            None
+        }
+    }
+
+    /// Downcast to a mutable reference of a StorageContainer of the `T` component type
+    /// 
+    /// Returns None if the ID of the `T` component does not match the underlying Container's Component ID
+    pub fn downcast_mut<T: Component>(&mut self) -> Option<&mut StorageContainer<T>>{
+        if T::ID == self.comp_id(){
+            Some(unsafe {
+                &mut *(self as *mut dyn StorageWrapper as *mut StorageContainer<T>)
+            })
+        }else{
+            None
+        }
+    }
 }

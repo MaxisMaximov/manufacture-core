@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use super::*;
 use comp::Component;
 use prefab::gmPrefab;
-use storage::gmStorage;
+use storage::Storage;
 use world::gmWorld;
 
 pub trait gmCommand: Any{
@@ -59,7 +59,7 @@ impl<T: Component> gmCommand for cmd_removeComp<T>{
     }
 
     fn execute(&self, IN_world: &mut gmWorld) {
-        IN_world.fetchMut::<T>().remove(&self.gmObj);
+        IN_world.fetchMut::<T>().remove(self.gmObj);
     }
 }
 
