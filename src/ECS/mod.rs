@@ -10,7 +10,6 @@ pub mod storage;
 pub mod system;
 pub mod world;
 pub mod resource;
-pub mod builders;
 pub mod dispatcher;
 pub mod entity;
 pub mod events;

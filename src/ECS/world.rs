@@ -5,7 +5,6 @@ use super::*;
 use events::*;
 use resource::*;
 use comp::*;
-use builders::EntityBuilder;
 use storage::*;
 use fetch::*;
 use entity::*;
