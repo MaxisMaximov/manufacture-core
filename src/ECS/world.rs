@@ -5,7 +5,7 @@ use super::*;
 use events::*;
 use resource::*;
 use comp::*;
-use builders::gmObjBuilder;
+use builders::EntityBuilder;
 use storage::*;
 use fetch::*;
 use entity::*;
@@ -125,15 +125,15 @@ impl gmWorld{
         self.events.get_mut().deregister::<T>();
     }
 
-    pub fn createGmObj(&mut self) -> gmObjBuilder{
-        gmObjBuilder::new(
-             {
+    pub fn createGmObj(&mut self) -> EntityBuilder{
+        EntityBuilder{
+            entity: {
                 let next_id = self.next_free.pop_first().unwrap_or(self.gmObjs.len());
                 self.gmObjs.insert(next_id, Entity::new(next_id));
                 next_id
             },
-            self,
-        )
+            world_ref: self,
+        }
     }
     pub fn deleteGmObj(&mut self, IN_id: usize) -> Result<(), ()>{
         match self.gmObjs.remove(&IN_id){

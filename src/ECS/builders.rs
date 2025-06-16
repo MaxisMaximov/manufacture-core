@@ -1,24 +1,20 @@
 use super::*;
 
-use comp::*;
-use storage::*;
-use world::*;
+use comp::Component;
+use storage::Storage;
+use world::gmWorld;
 
+/// # Entity Builder
+/// A safe and easy way to contruct a new Entity in the World
 #[must_use]
-pub struct gmObjBuilder<'a>{
-    gmObjID: usize,
-    worldRef: &'a mut gmWorld
+pub struct EntityBuilder<'a>{
+    pub(super) entity: usize,
+    pub(super) world_ref: &'a mut gmWorld
 }
-impl<'a> gmObjBuilder<'a>{
-    pub fn new(IN_id: usize, IN_world: &'a mut gmWorld) -> Self{
-        Self{
-            gmObjID: IN_id,
-            worldRef: IN_world,
-        }
-    }
-
-    pub fn addComp<T>(self, IN_comp: T) -> Self where T:Component{
-        self.worldRef.fetchMut::<T>().insert(self.gmObjID, IN_comp);
+impl<'a> EntityBuilder<'a>{
+    /// Add a specified component to the current Entity
+    pub fn with<T: Component>(self, Comp: T) -> Self{
+        self.world_ref.fetchMut::<T>().insert(self.entity, Comp);
         self
     }
 
