@@ -3,9 +3,19 @@ use std::{cell::{Ref, RefMut}, collections::{HashSet, VecDeque}};
 use super::*;
 use fetch::*;
 
+/// # Event trait
+/// Defines an event that systems can send and receive
+/// 
+/// ## WARNING
+/// Make sure the Event ID does not collide with Events from other plugins
 pub trait Event: 'static{
     const ID: &'static str;
 }
+
+/// # Event trait Wrapper
+/// A wrapper trait for Events to safely store them within the Event Map
+/// 
+/// Provides ID method for identifying the underlying Event
 pub trait EventWrapper{
     fn id(&self) -> &'static str;
 }
@@ -55,6 +65,7 @@ impl EventMap{
         self.alt_buffer.remove(T::ID);
     }
 
+    /// Switch buffers and clear the previous one
     pub(super) fn swap_buffers(&mut self){
         // Clear active buffer to (kinda) free up memory
         self.active_buffer.clear();
