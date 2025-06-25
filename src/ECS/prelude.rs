@@ -1,12 +1,11 @@
 pub use super::{
-    comp::*,
-    storage::*,
-    system::*,
-    world::*,
-    resource::*,
-    dispatcher::*,
-    entity::*,
-    events::*,
-    fetch::*,
-    commands::*
+    comp::Component,
+    storage::Storage,
+    system::System,
+    world::World,
+    resource::Resource,
+    dispatcher::gmDispatcher,
+    events::Event,
+    fetch::Query,
+    commands::Command
 };
