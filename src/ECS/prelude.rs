@@ -11,6 +11,5 @@ pub use super::{
     entity::*,
     events::*,
     fetch::*,
-    prefab::*,
     commands::*
 };

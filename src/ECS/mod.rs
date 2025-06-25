@@ -14,7 +14,6 @@ pub mod dispatcher;
 pub mod entity;
 pub mod events;
 pub mod commands;
-pub mod prefab;
 pub mod fetch;
 
 pub mod prelude;
