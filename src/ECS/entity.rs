@@ -90,6 +90,7 @@ impl<'a> EntityBuilder<'a>{
     /// Add a specified component to the current Entity
     pub fn with<T: Component>(self, Comp: T) -> Self{
         self.world_ref.fetch_mut::<T>().insert(self.entity, Comp);
+        self.world_ref.get_entity_mut(&self.entity).unwrap().components.insert(T::ID);
         self
     }
 

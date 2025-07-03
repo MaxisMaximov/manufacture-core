@@ -103,6 +103,9 @@ impl World{
     }
     pub fn deregister_comp<T>(&mut self) where T: Component{
         self.components.remove(T::ID);
+        for entity in self.entities.values_mut(){
+            entity.components.remove(T::ID);
+        }
     }
 
     pub fn register_res<T>(&mut self) where T: Resource{
@@ -172,5 +175,12 @@ impl World{
             Some(entity) => entity.hash() == Token.hash(),
             None => false,
         }
+    }
+
+    pub fn get_entity(&self, Id: &usize) -> Option<&Entity>{
+        self.entities.get(Id)
+    }
+    pub fn get_entity_mut(&mut self, Id: &usize) -> Option<&mut Entity>{
+        self.entities.get_mut(Id)
     }
 }
