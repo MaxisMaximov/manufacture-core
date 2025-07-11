@@ -80,43 +80,42 @@ impl Dispatcher{
             stages: Vec::new(),
         }
     }
+    
     pub fn with<S: System>(mut self) -> Self{
         if self.registry.contains_key(S::ID){
             panic!("ERROR: System {} already exists\nOverrides are not yet supported, if that's what you wanted to do", S::ID);
         }
 
-        // Check what stage the system would ideally be in
+        // Check what stage the system should ideally be in
         let mut ideal_stage = 0;
         for dep in S::DEPENDS{
-            if !self.registry.contains_key(dep){
+            if let Some(dep_stage) = self.registry.get(dep){
+                ideal_stage = ideal_stage.max(*dep_stage)
+            }else{
                 panic!("ERROR: System {}'s dependency {} does not exist", S::ID, dep)
             }
-            // The latest stage a dependency is in is the ideal stage
-            ideal_stage = ideal_stage.max(*self.registry.get(dep).unwrap());
         }
-        
-        // Keep looping until we find a compatible stage
-        loop{
 
-            if let Some(stage) = self.stages.get_mut(ideal_stage){
-                // Check if the stage as at it's limit
-                if !stage.len() >= 5{
+        // We iterate over stages starting from the ideal one
+        for pos_stage in ideal_stage..{
+            if let Some(stage) = self.stages.get_mut(pos_stage){
+                // If the stage still has room in it, push the system
+                if !stage.len() < 5{
                     stage.push(Box::new(S::new()));
-                    break
-                }else{
-                    // If it is, check the next stage
-                    ideal_stage += 1
+                    self.registry.insert(S::ID, pos_stage);
+                    break;
                 }
+            // If we've reached the end of Stage vec and found no suitable stage, make a new one
             }else{
-                // If the stage doesn't exist, push a new one
                 self.stages.push(Vec::new());
                 self.stages.last_mut().unwrap().push(Box::new(S::new()));
+                self.registry.insert(S::ID, pos_stage);
             }
         }
-        self.registry.insert(S::ID, ideal_stage);
 
         self
     }
+
     pub fn dispatch(&mut self, World: &mut World){
         for stage in self.stages.iter_mut(){
             for system in stage.iter_mut(){
