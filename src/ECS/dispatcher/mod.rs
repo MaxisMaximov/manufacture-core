@@ -97,24 +97,23 @@ impl Dispatcher{
         
         // Keep looping until we find a compatible stage
         loop{
-            match self.stages.get_mut(ideal_stage){
-                Some(stage) => {
-                    // Check if the stage is at it's limits
-                    if !stage.len() == 5{
-                        stage.push(Box::new(S::new()));
-                        break;
-                    }else{
-                        ideal_stage += 1
-                    }
-                },
-                None => {
-                    let mut stage: Vec<Box<dyn SystemWrapper>> = Vec::new();
+
+            if let Some(stage) = self.stages.get_mut(ideal_stage){
+                // Check if the stage as at it's limit
+                if !stage.len() >= 5{
                     stage.push(Box::new(S::new()));
-                    self.stages.push(stage);
-                    break;
+                    break
+                }else{
+                    // If it is, check the next stage
+                    ideal_stage += 1
                 }
+            }else{
+                // If the stage doesn't exist, push a new one
+                self.stages.push(Vec::new());
+                self.stages.last_mut().unwrap().push(Box::new(S::new()));
             }
         }
+        self.registry.insert(S::ID, ideal_stage);
 
         self
     }
