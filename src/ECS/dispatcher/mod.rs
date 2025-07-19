@@ -80,7 +80,28 @@ impl Dispatcher{
             stages: Vec::new(),
         }
     }
-    
+
+    pub fn dispatch(&mut self, World: &mut World){
+        for stage in self.stages.iter_mut(){
+            for system in stage.iter_mut(){
+                system.execute(World);
+            }
+        }
+    }
+}
+
+pub struct DispatcherBuilder{
+    registry: HashMap<&'static str, usize>,
+    stages: Vec<Vec<Box<dyn SystemWrapper>>>
+}
+impl DispatcherBuilder{
+    pub fn new() -> Self{
+        Self{
+            registry: HashMap::new(),
+            stages: Vec::new(),
+        }
+    }
+
     pub fn with<S: System>(mut self) -> Self{
         if self.registry.contains_key(S::ID){
             panic!("ERROR: System {} already exists\nOverrides are not yet supported, if that's what you wanted to do", S::ID);
@@ -116,11 +137,10 @@ impl Dispatcher{
         self
     }
 
-    pub fn dispatch(&mut self, World: &mut World){
-        for stage in self.stages.iter_mut(){
-            for system in stage.iter_mut(){
-                system.execute(World);
-            }
+    fn build(self) -> Dispatcher{
+        Dispatcher{
+            registry: self.registry,
+            stages: self.stages,
         }
     }
 }
