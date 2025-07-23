@@ -114,45 +114,38 @@ impl DispatcherBuilder{
             panic!("ERROR: System {} already exists\nIf you wish to override this system, use `.overrides()` instead", S::ID);
         }
 
-        // Check what stage the system should ideally be in
-        let mut ideal_stage = 0;
+        // Check if system's dependencies exist
         for dep in S::DEPENDS{
-            // Check dependency type
-            match dep{
-                DepType::Required(_) => {
-                    // We have the required dependency, see what stage it's at
-                    if let Some(dep_stage) = self.registry.get(dep.value()) {
-                        ideal_stage = std::cmp::max(ideal_stage, *dep_stage);
-                        continue
-                    }
-                },
-                DepType::Optional(_) => {
-                    if let Some(dep_stage) = self.registry.get(dep.value()){
-                        ideal_stage = std::cmp::max(ideal_stage, *dep_stage);
-                    }
-                    // We don't care if the dependency exists or not, we can move on even if we don't have it
-                    continue
-                },
-                DepType::Incompatible(_) => {
-                    // We only need to check if we *don't* have the dependency
-                    // If we do, we break out of the loop
-                    if !self.registry.contains_key(dep.value()){
-                        continue
-                    }
-                },
+            if !self.registry.contains_key(dep){
+                panic!("ERROR: System {}'s dependency system {} does not exist", S::ID, dep)
             }
-            // If we got here, something went wrong, check what the system wants to do
-            match S::DEPRESOLVE{
-                DepResolution::Null => {},
-                DepResolution::RemoveSelf => return,
-                DepResolution::Panic => 
-                    panic!("ERROR: System {}'s dependency system {} does not exist", S::ID, dep.value())
+        }
+        
+        // Check what stage the system should ideally be in
+        let mut min_stage = 0;
+        let mut max_stage = usize::MAX;
+        for cond in S::RUNORD.iter(){
+            match cond{
+                RunOrder::Before(sys) => {
+                    if let Some(stage) = self.registry.get(sys){
+                        max_stage = std::cmp::min(min_stage, *stage) - 1
+                    }
+                },
+                RunOrder::After(sys) => {
+                    if let Some(stage) = self.registry.get(sys){
+                        min_stage = std::cmp::max(min_stage, *stage)
+                    }
+                },
             }
         }
 
-        // Find a suitable stage starting from Ideal one
+        if min_stage > max_stage{
+            panic!("ERROR: Minimum possible stage for system {} is later than the maximum possible stage", S::ID)
+        }
+
+        // Find a suitable stage for the system
         // Ideal stage is the earliest stage the system can be in
-        for final_stage in ideal_stage..{
+        for final_stage in min_stage..max_stage{
             if let Some(stage) = self.stages.get_mut(final_stage){
                 // If the stage still has room in it, push the system
                 if !stage.len() < 5{
@@ -160,12 +153,20 @@ impl DispatcherBuilder{
                     self.registry.insert(S::ID, final_stage);
                     break;
                 }
-            // If we've gone over all stages and found no suitable stage, make a new one
+            // If we've rached the end of stages and found no suitable stage, make a new one
             }else{
                 self.stages.push(Vec::new());
                 self.stages.last_mut().unwrap().push(Box::new(S::new()));
                 self.registry.insert(S::ID, final_stage);
             }
+        }
+
+        // If it is still not registered, there must've been no available stage in range
+        if !self.registry.contains_key(S::ID){
+            // As such, we insert a new stage inbetween the possible stages
+            // Since `insert` pushes all elements to the right, we can just insert a new stage at `max_stage`'s position`
+            self.stages.insert(max_stage, Vec::new());
+            self.stages.get_mut(max_stage).unwrap().push(Box::new(S::new()));
         }
     }
 
