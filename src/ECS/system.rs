@@ -19,8 +19,8 @@ pub trait System: 'static{
     type QUERY: QueryData;
     type REQUEST: RequestData;
     const ID: &'static str;
-    const DEPENDS: &'static [DepType];
-    const DEPRESOLVE: DepResolution;
+    const DEPENDS: &'static [&'static str];
+    const RUNORD: &'static [RunOrder];
 
     /// Create a new instance of this System
     fn new() -> Self;
@@ -37,7 +37,7 @@ pub trait SystemWrapper{
     /// Get the underlying System's ID
     fn id(&self) -> &'static str;
     /// Get the underlying System's dependencies
-    fn depends(&self) -> &'static [DepType];
+    fn depends(&self) -> &'static [&'static str];
     /// Run the underlying System with specified World
     fn execute<'a>(&mut self, World: &'a mut World);
 }
@@ -46,7 +46,7 @@ impl<T: System> SystemWrapper for T{
     fn id(&self) -> &'static str {
         T::ID
     }   
-    fn depends(&self) -> &'static [DepType] {
+    fn depends(&self) -> &'static [&'static str] {
         T::DEPENDS
     }
     fn execute<'a>(&mut self, World: &'a mut World) {
@@ -54,23 +54,16 @@ impl<T: System> SystemWrapper for T{
     }
 }
 
-pub enum DepResolution{
-    Null,
-    RemoveSelf,
-    Panic
-}
 
-pub enum DepType<T = &'static str>{
-    Required(T),
-    Optional(T),
-    Incompatible(T)
+pub enum RunOrder{
+    Before(&'static str),
+    After(&'static str),
 }
-impl DepType{
+impl RunOrder{
     pub fn value(&self) -> &'static str{
         match *self{
-            DepType::Required(id) => id,
-            DepType::Optional(id) => id,
-            DepType::Incompatible(id) => id,
+            RunOrder::Before(val) => val,
+            RunOrder::After(val) => val,
         }
     }
 }
