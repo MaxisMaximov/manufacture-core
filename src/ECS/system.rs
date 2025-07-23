@@ -20,6 +20,7 @@ pub trait System: 'static{
     type REQUEST: RequestData;
     const ID: &'static str;
     const DEPENDS: &'static [&'static str];
+    const DEPRESOLVE: DependResolve;
 
     /// Create a new instance of this System
     fn new() -> Self;
@@ -51,4 +52,10 @@ impl<T: System> SystemWrapper for T{
     fn execute<'a>(&mut self, World: &'a mut World) {
         self.execute(Query::fetch(World), Request::fetch(World));
     }
+}
+
+pub enum DependResolve{
+    Null,
+    RemoveSelf,
+    Panic
 }
