@@ -126,3 +126,16 @@ impl DispatcherBuilder{
         }
     }
 }
+
+pub enum RunOrder{
+    Before(&'static str),
+    After(&'static str),
+}
+impl RunOrder{
+    pub fn value(&self) -> &'static str{
+        match *self{
+            RunOrder::Before(val) => val,
+            RunOrder::After(val) => val,
+        }
+    }
+}

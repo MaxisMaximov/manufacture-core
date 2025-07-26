@@ -1,4 +1,5 @@
 use super::world::World;
+use super::dispatcher::RunOrder;
 use super::fetch::query::{QueryData, Query};
 use super::fetch::request::{Request, RequestData};
 
@@ -51,19 +52,5 @@ impl<T: System> SystemWrapper for T{
     }
     fn execute<'a>(&mut self, World: &'a mut World) {
         self.execute(Query::fetch(World), Request::fetch(World));
-    }
-}
-
-
-pub enum RunOrder{
-    Before(&'static str),
-    After(&'static str),
-}
-impl RunOrder{
-    pub fn value(&self) -> &'static str{
-        match *self{
-            RunOrder::Before(val) => val,
-            RunOrder::After(val) => val,
-        }
     }
 }
