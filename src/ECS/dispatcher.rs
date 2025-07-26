@@ -128,11 +128,13 @@ impl DispatcherBuilder{
 }
 
 struct StageManager{
+    registry: HashMap<&'static str, usize>,
     stages: Vec<Vec<Box<dyn SystemWrapper>>>
 }
 impl StageManager{
     pub fn new() -> Self{
         Self{
+            registry: HashMap::new(),
             stages: Vec::new()
         }
     }
@@ -141,6 +143,25 @@ impl StageManager{
             for system in stage.iter_mut(){
                 system.execute(World);
             }
+        }
+    }
+}
+
+struct StageManagerBuilder{
+    registry: HashMap<&'static str, usize>,
+    stages: Vec<Vec<Box<dyn SystemWrapper>>>
+}
+impl StageManagerBuilder{
+    pub fn new() -> Self{
+        Self{
+            registry: HashMap::new(),
+            stages: Vec::new(),
+        }
+    }
+    pub fn build(self) -> StageManager{
+        StageManager{
+            registry: self.registry,
+            stages: self.stages,
         }
     }
 }
