@@ -127,6 +127,24 @@ impl DispatcherBuilder{
     }
 }
 
+struct StageManager{
+    stages: Vec<Vec<Box<dyn SystemWrapper>>>
+}
+impl StageManager{
+    pub fn new() -> Self{
+        Self{
+            stages: Vec::new()
+        }
+    }
+    pub fn dispatch(&mut self, World: &mut World){
+        for stage in self.stages.iter_mut(){
+            for system in stage.iter_mut(){
+                system.execute(World);
+            }
+        }
+    }
+}
+
 pub enum RunOrder{
     Before(&'static str),
     After(&'static str),
