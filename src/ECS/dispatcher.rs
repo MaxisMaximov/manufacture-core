@@ -5,31 +5,41 @@ use super::world::World;
 
 pub struct Dispatcher{
     registry: HashMap<&'static str, usize>,
-    stages: StageManager
+    preproc: StageManager,
+    stages: StageManager,
+    postproc: StageManager
 }
 impl Dispatcher{
     pub fn new() -> Self{
         Self{
             registry: HashMap::new(),
+            preproc: StageManager::new(),
             stages: StageManager::new(),
+            postproc: StageManager::new(),
         }
     }
 
     pub fn dispatch(&mut self, World: &mut World){
+        self.preproc.dispatch(World);
         self.stages.dispatch(World);
+        self.postproc.dispatch(World);
     }
 }
 
 #[must_use]
 pub struct DispatcherBuilder{
     registry: HashMap<&'static str, usize>, // ID, Stage
-    stages: StageManagerBuilder
+    preproc: StageManagerBuilder,
+    stages: StageManagerBuilder,
+    postproc: StageManagerBuilder
 }
 impl DispatcherBuilder{
     pub fn new() -> Self{
         Self{
             registry: HashMap::new(),
+            preproc: StageManagerBuilder::new(),
             stages: StageManagerBuilder::new(),
+            postproc: StageManagerBuilder::new(),
         }
     }
 
@@ -58,7 +68,9 @@ impl DispatcherBuilder{
     fn build(self) -> Dispatcher{
         Dispatcher{
             registry: self.registry,
+            preproc: self.preproc.build(),
             stages: self.stages.build(),
+            postproc: self.postproc.build(),
         }
     }
 }
@@ -117,15 +129,16 @@ impl StageManagerBuilder{
             }
         }
 
+        // Something went wrong with the order
         if min_stage > max_stage{
             panic!("ERROR: Earliest possible stage for system {} is later than the latest possible stage", S::ID)
         }
 
         // Find a suitable stage for the system
-        // Ideal stage is the earliest stage the system can be in
         for final_stage in min_stage..max_stage{
             match self.stages.get_mut(final_stage) {
                 Some(stage) => {
+                    // Stage is full and we can't push anything else into it
                     if stage.len() >= 5{
                         continue
                     }
@@ -134,6 +147,7 @@ impl StageManagerBuilder{
                     self.registry.insert(S::ID, final_stage);
                     return final_stage
                 }
+                // We've reached the end of the stages but found no suitable one
                 None => {
                     self.stages.push(Vec::new());
                     // We can safely index it as we just pushed at `final_stage`
@@ -151,6 +165,7 @@ impl StageManagerBuilder{
         self.stages.insert(max_stage, Vec::new());
         self.stages[max_stage].push(Box::new(S::new()));
         return max_stage
+
     }
 
     pub fn build(self) -> StageManager{
