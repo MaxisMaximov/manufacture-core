@@ -88,8 +88,23 @@ impl DispatcherBuilder{
             }
         }
 
-        // FINALIZE STAGES
-        todo!();
+        // Convert layers to stages & split them accordingly
+        let mut stages: Vec<Stage> = Vec::new();
+        for mut layer in self.dep_graph.drain(0..){
+            let mut stage = Vec::new();
+            for (_, system) in layer.drain(){
+                stage.push(system);
+                // If stage is full already, push it to Stages and put a new one in it's place
+                if stage.len() == 5{
+                    stages.push(stage);
+                    stage = Vec::new()
+                }
+            }
+            // Push the incomplete stage just in case
+            if !stage.is_empty(){
+                stages.push(stage);
+            }
+        }
         
         Dispatcher{
             registry: unimplemented!(),
