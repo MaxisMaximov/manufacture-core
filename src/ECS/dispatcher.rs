@@ -38,8 +38,8 @@ impl DispatcherBuilder{
         self.registry.insert(S::ID);
         self.dep_graph[0].insert(S::ID, Box::new(S::new()));
     }
-    pub fn build(mut self) -> Dispatcher{
-        // Verify dependencies of each system
+    // Verify dependencies of each system
+    fn verify_deps(&mut self){
         for system in self.dep_graph[0].values(){
             for dep in system.depends(){
                 if !self.registry.contains(dep){
@@ -47,8 +47,9 @@ impl DispatcherBuilder{
                 }
             }
         }
-
-        // Build dependency 'graph' and resolve system order
+    }
+    // Build dependency 'graph' and resolve system order
+    fn build_dep_graph(&mut self){
         // Welcome to indentation hell
         // Population: Graph Building
         let mut shifts = HashSet::new();
@@ -87,8 +88,9 @@ impl DispatcherBuilder{
                 self.dep_graph[layer_id + 1].insert(system.id(), system);
             }
         }
-
-        // Convert layers to stages & split them accordingly
+    }
+    // Convert layers to stages & split them accordingly
+    fn finalize_stages(&mut self) -> Vec<Stage>{
         let mut stages: Vec<Stage> = Vec::new();
         for mut layer in self.dep_graph.drain(0..){
             let mut stage = Vec::new();
@@ -104,11 +106,21 @@ impl DispatcherBuilder{
             if !stage.is_empty(){
                 stages.push(stage);
             }
-        }
+        };
+        stages
+    }
+    pub fn build(mut self) -> Dispatcher{
+
+        // First time splitting something into sepparate functions
+        // But it's for the sake of readibility here
+        self.verify_deps();
+        self.build_dep_graph();
+        let stages: Vec<Stage> = self.finalize_stages();
+
         
         Dispatcher{
-            registry: unimplemented!(),
-            systems: unimplemented!()
+            registry: self.registry,
+            systems: stages
         }
     }
 }
