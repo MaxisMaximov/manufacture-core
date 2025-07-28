@@ -40,8 +40,13 @@ pub trait SystemWrapper{
     fn id(&self) -> &'static str;
     /// Get the underlying System's dependencies
     fn depends(&self) -> &'static [&'static str];
+
+    fn run_order(&self) -> &'static [RunOrder];
+    fn sys_type(&self) -> SystemType;
+
     /// Run the underlying System with specified World
     fn execute<'a>(&mut self, World: &'a mut World);
+    
 }
 
 impl<T: System> SystemWrapper for T{
@@ -50,6 +55,12 @@ impl<T: System> SystemWrapper for T{
     }   
     fn depends(&self) -> &'static [&'static str] {
         T::DEPENDS
+    }
+    fn run_order(&self) -> &'static [RunOrder] {
+        T::RUNORD
+    }
+    fn sys_type(&self) -> SystemType {
+        T::TYPE
     }
     fn execute<'a>(&mut self, World: &'a mut World) {
         self.execute(Query::fetch(World), Request::fetch(World));
