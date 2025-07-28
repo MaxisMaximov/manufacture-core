@@ -39,8 +39,14 @@ impl DispatcherBuilder{
         self.dep_graph[0].push(Box::new(S::new()));
     }
     pub fn build(mut self) -> Dispatcher{
-        // VERIFY DEPS
-        todo!();
+        // Verify dependencies of each system
+        for system in self.dep_graph[0].iter(){
+            for dep in system.depends(){
+                if !self.registry.contains(dep){
+                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id(), dep)
+                }
+            }
+        }
         // BUILD DEP GRAPH
         todo!();
         // FINALIZE STAGES
