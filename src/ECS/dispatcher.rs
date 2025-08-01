@@ -32,32 +32,44 @@ impl DispatcherBuilder{
         }
     }
     pub fn add<S: System>(&mut self){
+
         if self.registry.contains_key(S::ID){
             panic!("ERROR: System {} already exists", S::ID)
         }
+
         self.registry.insert(S::ID, Box::new(S::new()));
-        self.dep_graph[0].insert(S::ID);
+        self.dep_graph[0].insert(S::ID); // We will resolve everythin in the Build step
     }
     // Verify dependencies of each system
     fn verify_deps(&mut self){
-        for system_id in self.dep_graph[0].iter(){
-            for dep in self.registry.get(system_id).unwrap().depends(){
+        for system in self.registry.values(){
+            for dep in system.depends(){
                 if !self.registry.contains_key(dep){
-                    panic!("ERROR: System {}'s dependency system {} does not exist", system_id, dep)
+                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id(), dep)
                 }
             }
         }
     }
     // Build dependency 'graph' and resolve system order
-    fn build_dep_graph(&mut self){
+    fn build_run_order_graph(&mut self){
         // Welcome to indentation hell
         // Population: Graph Building
+
+        // Here to prevent unnecessary reallocation
         let mut shifts = HashSet::new();
+
+        // Essentially iterate until everything is resolved
         for layer_id in 0..{
+
+            // Unwrap: We only push new layers when there were shifts on previous layers
+            // If there were none, we break out of the loop
             let layer = self.dep_graph.get(layer_id).unwrap();
+
             // Iterate over layer's systems to see which we should shift
             for system_id in layer.iter(){
+                
                 for order_dep in self.registry.get(system_id).unwrap().run_order(){
+
                     match order_dep{
                         // If we need this system to run before, we shift the other system to later
                         RunOrder::Before(id) => {
@@ -65,8 +77,8 @@ impl DispatcherBuilder{
                                 shifts.insert(id.clone());
                             }
                         },
-                        // Equivalent of the other system running before this one
-                        // So we simply shift this one down
+                        // Equivalent of the other system having `Before(this_system)`
+                        // So we shift *this* one to later instead
                         RunOrder::After(id) => {
                             if layer.contains(id){
                                 shifts.insert(system_id);
@@ -75,37 +87,60 @@ impl DispatcherBuilder{
                     }
                 }
             }
+
             // No shifts happened, we're done with our graph
             if shifts.is_empty() {
                 break;
             }
-            // Push a new layer for the shifts..
+
+            // This should not happen unless there's a circular dependency between the systems
+            if shifts.len() == layer.len(){
+                panic!("ERROR: There are circular run orders between {} systems:\n{:#?}\nPlease resolve them", layer.len(), layer)
+            }
+
+            // This is here to ensure the layer reference gets dropped
+            // The compiler doesn't complain that we're pushing to the graph while having
+            // a part of it borrowed in the later step, no idea why, usually it yells at me for that
+            drop(layer);
+
+            // Push a new layer and move all the shifted systems from current layer to next layer
             self.dep_graph.push(HashSet::new());
-            // ..and now move all the systems from current layer to next layer
-            // Also clears the shifts set for next layer
-            for system_id in shifts.drain(){
+            
+            for system_id in shifts.drain(){ // Clear the shifts while we're at it
+                self.dep_graph[layer_id].remove(system_id);
                 self.dep_graph[layer_id + 1].insert(system_id);
             }
         }
     }
     // Convert layers to stages & split them accordingly
-    fn finalize_build(&mut self) -> Dispatcher{
+    fn finalize(&mut self) -> Dispatcher{
+        // Init thingies that will be used in the Dispatcher
         let mut registry = HashSet::new();
         let mut stages: Vec<Stage> = Vec::new();
+
+        // Now convert the 'graph' into stages 
         for mut layer in self.dep_graph.drain(0..){
+
             let mut stage = Vec::new();
+
+            // Convert layer to stages
             for system_id in layer.drain(){
+
+                // Take the system Box out of the registry and 
+                // push it to the Dispatcher registry and the stage
                 let system = self.registry.remove(system_id).unwrap();
 
                 registry.insert(system_id);
                 stage.push(system);
-                // If stage is full already, push it to Stages and put a new one in it's place
+
+                // Stage is full, push it outta here and init a new one for next iteration
                 if stage.len() == 5{
                     stages.push(stage);
                     stage = Vec::new()
                 }
             }
             // Push the incomplete stage just in case
+            // We can't have it for next iteration as systems may get their run order jumbled up
             if !stage.is_empty(){
                 stages.push(stage);
             }
@@ -121,8 +156,8 @@ impl DispatcherBuilder{
         // First time splitting something into sepparate functions
         // But it's for the sake of readibility here
         self.verify_deps();
-        self.build_dep_graph();
-        self.finalize_build()
+        self.build_run_order_graph();
+        self.finalize()
     }
 }
 
