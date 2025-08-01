@@ -21,29 +21,29 @@ impl Dispatcher{
 
 #[must_use]
 pub struct DispatcherBuilder{
-    registry: HashSet<&'static str>,
-    dep_graph: Vec<HashMap<&'static str, Box<dyn SystemWrapper>>>
+    registry: HashMap<&'static str, Box<dyn SystemWrapper>>,
+    dep_graph: Vec<HashSet<&'static str>>
 }
 impl DispatcherBuilder{
     pub fn new() -> Self{
         Self{
-            registry: HashSet::new(),
+            registry: HashMap::new(),
             dep_graph: Vec::new()
         }
     }
     pub fn add<S: System>(&mut self){
-        if self.registry.contains(S::ID){
+        if self.registry.contains_key(S::ID){
             panic!("ERROR: System {} already exists", S::ID)
         }
-        self.registry.insert(S::ID);
-        self.dep_graph[0].insert(S::ID, Box::new(S::new()));
+        self.registry.insert(S::ID, Box::new(S::new()));
+        self.dep_graph[0].insert(S::ID);
     }
     // Verify dependencies of each system
     fn verify_deps(&mut self){
-        for system in self.dep_graph[0].values(){
-            for dep in system.depends(){
-                if !self.registry.contains(dep){
-                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id(), dep)
+        for system_id in self.dep_graph[0].iter(){
+            for dep in self.registry.get(system_id).unwrap().depends(){
+                if !self.registry.contains_key(dep){
+                    panic!("ERROR: System {}'s dependency system {} does not exist", system_id, dep)
                 }
             }
         }
@@ -56,20 +56,20 @@ impl DispatcherBuilder{
         for layer_id in 0..{
             let layer = self.dep_graph.get(layer_id).unwrap();
             // Iterate over layer's systems to see which we should shift
-            for system in layer.values(){
-                for order_dep in system.run_order(){
+            for system_id in layer.iter(){
+                for order_dep in self.registry.get(system_id).unwrap().run_order(){
                     match order_dep{
                         // If we need this system to run before, we shift the other system to later
                         RunOrder::Before(id) => {
-                            if layer.contains_key(id){
+                            if layer.contains(id){
                                 shifts.insert(id.clone());
                             }
                         },
                         // Equivalent of the other system running before this one
                         // So we simply shift this one down
                         RunOrder::After(id) => {
-                            if layer.contains_key(id){
-                                shifts.insert(system.id());
+                            if layer.contains(id){
+                                shifts.insert(system_id);
                             }
                         },
                     }
@@ -80,21 +80,24 @@ impl DispatcherBuilder{
                 break;
             }
             // Push a new layer for the shifts..
-            self.dep_graph.push(HashMap::new());
+            self.dep_graph.push(HashSet::new());
             // ..and now move all the systems from current layer to next layer
             // Also clears the shifts set for next layer
             for system_id in shifts.drain(){
-                let system = self.dep_graph[layer_id].remove(system_id).unwrap();
-                self.dep_graph[layer_id + 1].insert(system.id(), system);
+                self.dep_graph[layer_id + 1].insert(system_id);
             }
         }
     }
     // Convert layers to stages & split them accordingly
-    fn finalize_stages(&mut self) -> Vec<Stage>{
+    fn finalize_build(&mut self) -> Dispatcher{
+        let mut registry = HashSet::new();
         let mut stages: Vec<Stage> = Vec::new();
         for mut layer in self.dep_graph.drain(0..){
             let mut stage = Vec::new();
-            for (_, system) in layer.drain(){
+            for system_id in layer.drain(){
+                let system = self.registry.remove(system_id).unwrap();
+
+                registry.insert(system_id);
                 stage.push(system);
                 // If stage is full already, push it to Stages and put a new one in it's place
                 if stage.len() == 5{
@@ -107,7 +110,11 @@ impl DispatcherBuilder{
                 stages.push(stage);
             }
         };
-        stages
+        
+        Dispatcher{
+            registry,
+            systems: stages,
+        }
     }
     pub fn build(mut self) -> Dispatcher{
 
@@ -115,13 +122,7 @@ impl DispatcherBuilder{
         // But it's for the sake of readibility here
         self.verify_deps();
         self.build_dep_graph();
-        let stages: Vec<Stage> = self.finalize_stages();
-
-        
-        Dispatcher{
-            registry: self.registry,
-            systems: stages
-        }
+        self.finalize_build()
     }
 }
 
