@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::time::{Duration, Instant};
 
 use super::system::*;
 use super::world::World;
@@ -13,20 +14,29 @@ pub struct Dispatcher{
 }
 impl Dispatcher{
     pub fn dispatch(&mut self, World: &mut World){
-        for stage in self.preproc.iter_mut(){
-            for system in stage.iter_mut(){
-                system.execute(World);
+        let mut previous_tick = Instant::now();
+        loop{
+            // -- PREPROCESSORS --
+            for stage in self.preproc.iter_mut(){
+                for system in stage.iter_mut(){
+                    system.execute(World);
+                }
             }
-        }
-        for stage in self.logic.iter_mut(){
-            for system in stage.iter_mut(){
-                system.execute(World);
+            // -- LOGIC LOOP --
+            if previous_tick.elapsed().as_millis() < 50{
+                for stage in self.logic.iter_mut(){
+                    for system in stage.iter_mut(){
+                        system.execute(World);
+                    }
+                }
             }
-        }
-        for stage in self.postproc.iter_mut(){
-            for system in stage.iter_mut(){
-                system.execute(World);
+            // -- POSTPROCESSORS --
+            for stage in self.postproc.iter_mut(){
+                for system in stage.iter_mut(){
+                    system.execute(World);
+                }
             }
+            previous_tick = Instant::now();
         }
     }
 }
