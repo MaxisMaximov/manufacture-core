@@ -34,15 +34,13 @@ impl Dispatcher{
 #[must_use]
 pub struct DispatcherBuilder{
     registry: HashSet<&'static str>,
-    systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
-    dep_graph: Vec<HashSet<&'static str>>
+    systems: HashMap<&'static str, Box<dyn SystemWrapper>>
 }
 impl DispatcherBuilder{
     pub fn new() -> Self{
         Self{
             registry: HashSet::new(),
-            systems: HashMap::new(),
-            dep_graph: Vec::new()
+            systems: HashMap::new()
         }
     }
     pub fn add<S: System>(&mut self){
@@ -53,10 +51,9 @@ impl DispatcherBuilder{
 
         self.registry.insert(S::ID);
         self.systems.insert(S::ID, Box::new(S::new()));
-        self.dep_graph[0].insert(S::ID); // We will resolve everythin in the Build step
     }
     // Verify dependencies of each system
-    fn verify_deps(&mut self){
+    fn verify_deps(&self){
         for system in self.systems.values(){
             for dep in system.depends(){
                 if !self.systems.contains_key(dep){
@@ -66,10 +63,11 @@ impl DispatcherBuilder{
         }
     }
     // Build dependency 'graph' and resolve system order
-    fn build_run_order_graph(&mut self){
+    fn build_run_order_graph(&self, SystemSet: HashSet<&'static str>) -> Vec<HashSet<&'static str>>{
         // Welcome to indentation hell
         // Population: Graph Building
 
+        let mut dep_graph = Vec::from([SystemSet]);
         // Here to prevent unnecessary reallocation
         let mut shifts = HashSet::new();
 
@@ -78,7 +76,7 @@ impl DispatcherBuilder{
 
             // Unwrap: We only push new layers when there were shifts on previous layers
             // If there were none, we break out of the loop
-            let layer = self.dep_graph.get(layer_id).unwrap();
+            let layer = dep_graph.get(layer_id).unwrap();
 
             // Iterate over layer's systems to see which we should shift
             for system_id in layer.iter(){
@@ -119,22 +117,23 @@ impl DispatcherBuilder{
             drop(layer);
 
             // Push a new layer and move all the shifted systems from current layer to next layer
-            self.dep_graph.push(HashSet::new());
+            dep_graph.push(HashSet::new());
             
             for system_id in shifts.drain(){ // Clear the shifts while we're at it
-                self.dep_graph[layer_id].remove(system_id);
-                self.dep_graph[layer_id + 1].insert(system_id);
+                dep_graph[layer_id].remove(system_id);
+                dep_graph[layer_id + 1].insert(system_id);
             }
-        }
+        };
+
+        dep_graph
     }
     // Convert layers to stages & split them accordingly
-    fn build_stages(&mut self) -> Dispatcher{
-        // Init thingies that will be used in the Dispatcher
-        let mut registry = HashSet::new();
+    fn build_stages(&mut self, mut Graph: Vec<HashSet<&'static str>>) -> Vec<Stage>{
+
         let mut stages: Vec<Stage> = Vec::new();
 
         // Now convert the 'graph' into stages 
-        for mut layer in self.dep_graph.drain(0..){
+        for mut layer in Graph.drain(0..){
 
             let mut stage = Vec::new();
 
@@ -145,7 +144,6 @@ impl DispatcherBuilder{
                 // push it to the Dispatcher registry and the stage
                 let system = self.systems.remove(system_id).unwrap();
 
-                registry.insert(system_id);
                 stage.push(system);
 
                 // Stage is full, push it outta here and init a new one for next iteration
@@ -161,18 +159,38 @@ impl DispatcherBuilder{
             }
         };
         
-        Dispatcher{
-            registry,
-            systems: stages,
-        }
+        stages
     }
     pub fn build(mut self) -> Dispatcher{
 
-        // First time splitting something into sepparate functions
-        // But it's for the sake of readibility here
         self.verify_deps();
-        self.build_run_order_graph();
-        self.build_stages()
+
+        let mut preproc = HashSet::new();
+        let mut logic = HashSet::new();
+        let mut postproc = HashSet::new();
+
+        for system in self.systems.values(){
+            match system.sys_type(){
+                SystemType::Preprocessor => preproc.insert(system.id()),
+                SystemType::Logic => logic.insert(system.id()),
+                SystemType::Postprocessor => postproc.insert(system.id()),
+            };
+        }
+
+        let preproc_graph = self.build_run_order_graph(preproc);
+        let logic_graph = self.build_run_order_graph(logic);
+        let postproc_graph = self.build_run_order_graph(postproc);
+        
+        let preproc_stages = self.build_stages(preproc_graph);
+        let logic_stages = self.build_stages(logic_graph);
+        let postproc_stages = self.build_stages(postproc_graph);
+
+        Dispatcher{
+            registry: self.registry,
+            preproc: preproc_stages,
+            logic: logic_stages,
+            postproc: postproc_stages,
+        }
     }
 }
 
