@@ -7,11 +7,23 @@ type Stage = Vec<Box<dyn SystemWrapper>>;
 
 pub struct Dispatcher{
     registry: HashSet<&'static str>,
-    systems: Vec<Stage>
+    preproc: Vec<Stage>,
+    logic: Vec<Stage>,
+    postproc: Vec<Stage>
 }
 impl Dispatcher{
     pub fn dispatch(&mut self, World: &mut World){
-        for stage in self.systems.iter_mut(){
+        for stage in self.preproc.iter_mut(){
+            for system in stage.iter_mut(){
+                system.execute(World);
+            }
+        }
+        for stage in self.logic.iter_mut(){
+            for system in stage.iter_mut(){
+                system.execute(World);
+            }
+        }
+        for stage in self.postproc.iter_mut(){
             for system in stage.iter_mut(){
                 system.execute(World);
             }
