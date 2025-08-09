@@ -43,13 +43,11 @@ impl Dispatcher{
 
 #[must_use]
 pub struct DispatcherBuilder{
-    registry: HashSet<&'static str>,
     systems: HashMap<&'static str, Box<dyn SystemWrapper>>
 }
 impl DispatcherBuilder{
     pub fn new() -> Self{
         Self{
-            registry: HashSet::new(),
             systems: HashMap::new()
         }
     }
@@ -59,8 +57,15 @@ impl DispatcherBuilder{
             panic!("ERROR: System {} already exists", S::ID)
         }
 
-        self.registry.insert(S::ID);
         self.systems.insert(S::ID, Box::new(S::new()));
+    }
+    // Create the registry with all the specifics about each system
+    // TODO: Make it actually compile the specifics
+    // lol
+    fn compile_registry(&self) -> HashSet<&'static str>{
+        let mut registry = HashSet::new();
+        self.systems.keys().map(|system| registry.insert(*system));
+        registry
     }
     // Verify dependencies of each system
     fn verify_deps(&self){
@@ -175,6 +180,8 @@ impl DispatcherBuilder{
 
         self.verify_deps();
 
+        let registry = self.compile_registry();
+
         let mut preproc = HashSet::new();
         let mut logic = HashSet::new();
         let mut postproc = HashSet::new();
@@ -191,15 +198,15 @@ impl DispatcherBuilder{
         let logic_graph = self.build_run_order_graph(logic);
         let postproc_graph = self.build_run_order_graph(postproc);
         
-        let preproc_stages = self.build_stages(preproc_graph);
-        let logic_stages = self.build_stages(logic_graph);
-        let postproc_stages = self.build_stages(postproc_graph);
+        let preproc = self.build_stages(preproc_graph);
+        let logic = self.build_stages(logic_graph);
+        let postproc = self.build_stages(postproc_graph);
 
         Dispatcher{
-            registry: self.registry,
-            preproc: preproc_stages,
-            logic: logic_stages,
-            postproc: postproc_stages,
+            registry,
+            preproc,
+            logic,
+            postproc,
         }
     }
 }
