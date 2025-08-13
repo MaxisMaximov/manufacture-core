@@ -79,68 +79,7 @@ impl DispatcherBuilder{
     }
     // Build dependency 'graph' and resolve system order
     fn build_run_order_graph(&self, SystemSet: HashSet<&'static str>) -> Vec<HashSet<&'static str>>{
-        // Welcome to indentation hell
-        // Population: Graph Building
-
-        let mut dep_graph = Vec::from([SystemSet]);
-        // Here to prevent unnecessary reallocation
-        let mut shifts = HashSet::new();
-
-        // Essentially iterate until everything is resolved
-        for layer_id in 0..{
-
-            // Unwrap: We only push new layers when there were shifts on previous layers
-            // If there were none, we break out of the loop
-            let layer = dep_graph.get(layer_id).unwrap();
-
-            // Iterate over layer's systems to see which we should shift
-            for system_id in layer.iter(){
-                
-                for order_dep in self.systems.get(system_id).unwrap().run_order(){
-
-                    match order_dep{
-                        // If we need this system to run before, we shift the other system to later
-                        RunOrder::Before(id) => {
-                            if layer.contains(id){
-                                shifts.insert(id.clone());
-                            }
-                        },
-                        // Equivalent of the other system having `Before(this_system)`
-                        // So we shift *this* one to later instead
-                        RunOrder::After(id) => {
-                            if layer.contains(id){
-                                shifts.insert(system_id);
-                            }
-                        },
-                    }
-                }
-            }
-
-            // No shifts happened, we're done with our graph
-            if shifts.is_empty() {
-                break;
-            }
-
-            // This should not happen unless there's a circular dependency between the systems
-            if shifts.len() == layer.len(){
-                panic!("ERROR: There are circular run orders between {} systems:\n{:#?}\nPlease resolve them", layer.len(), layer)
-            }
-
-            // This is here to ensure the layer reference gets dropped
-            // The compiler doesn't complain that we're pushing to the graph while having
-            // a part of it borrowed in the later step, no idea why, usually it yells at me for that
-            drop(layer);
-
-            // Push a new layer and move all the shifted systems from current layer to next layer
-            dep_graph.push(HashSet::new());
-            
-            for system_id in shifts.drain(){ // Clear the shifts while we're at it
-                dep_graph[layer_id].remove(system_id);
-                dep_graph[layer_id + 1].insert(system_id);
-            }
-        };
-
-        dep_graph
+        
     }
     // Convert layers to stages & split them accordingly
     fn build_stages(&mut self, mut Graph: Vec<HashSet<&'static str>>) -> Vec<Stage>{
@@ -217,8 +156,87 @@ struct RunOrderGraph{
 impl RunOrderGraph{
     fn new() -> Self{
         Self{
-            graph: Vec::new(),
+            graph: Vec::from([HashMap::new()]),
         }
+    }
+    fn add<S: System>(&mut self){
+        self.graph[0].insert(S::ID, S::RUNORD);
+    }
+    fn build(mut self) -> Vec<Vec<&'static str>>{
+        // Welcome to indentation hell
+        // Population: Graph Building
+
+        // Here to prevent unnecessary reallocation
+        let mut shifts = HashSet::new();
+
+        // Essentially iterate until everything is resolved
+        for layer_id in 0..{
+
+            // Unwrap: We only push new layers when there were shifts on previous layers
+            // If there were none, we would break out of the loop
+            let layer = self.graph.get(layer_id).unwrap();
+
+            // Iterate over layer's systems to see which we should shift
+            for (system_id, order_deps) in layer.iter(){
+                
+                for order_dep in order_deps.iter(){
+
+                    match order_dep{
+                        // If we need this system to run before, we shift the other system to later
+                        RunOrder::Before(id) => {
+                            if layer.contains_key(id){
+                                shifts.insert(*id);
+                            }
+                        },
+                        // Equivalent of the other system having `Before(this_system)`
+                        // So we shift *this* one to later instead
+                        RunOrder::After(id) => {
+                            if layer.contains_key(id){
+                                shifts.insert(*system_id);
+                            }
+                        },
+                    }
+                }
+            }
+
+            // No shifts happened, we're done with our graph
+            if shifts.is_empty() {
+                break;
+            }
+
+            // This should not happen unless there's a circular dependency between the systems
+            if shifts.len() == layer.len(){
+                panic!("ERROR: There are circular run orders between {} systems:\n{:#?}\nPlease resolve them", layer.len(), layer.keys())
+            }
+
+            // This is here to ensure the layer reference gets dropped
+            // The compiler doesn't complain that we're pushing to the graph while having
+            // a part of it borrowed in the later step, no idea why, usually it yells at me for that
+            drop(layer);
+
+            // Push a new layer and move all the shifted systems from current layer to next layer
+            self.graph.push(HashMap::new());
+            
+            for system_id in shifts.drain(){ // Clear the shifts while we're at it
+            let orders = self.graph[layer_id].remove(system_id).unwrap();
+            self.graph[layer_id + 1].insert(
+                system_id,
+                orders
+                );
+            }
+        };
+
+        // Now convert it into a graph without the extra data
+        let mut final_graph = Vec::new();
+
+        for mut layer in self.graph.drain(0..){
+            final_graph.push(Vec::new());
+            for (id, _) in layer.drain(){
+                final_graph.last_mut().unwrap().push(id);
+            }
+        }
+
+        final_graph
     }
 }
 
