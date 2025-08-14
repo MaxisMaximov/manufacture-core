@@ -43,12 +43,18 @@ impl Dispatcher{
 
 #[must_use]
 pub struct DispatcherBuilder{
-    systems: HashMap<&'static str, Box<dyn SystemWrapper>>
+    systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
+    preproc: StagesBuilder,
+    logic: StagesBuilder,
+    postproc: StagesBuilder,
 }
 impl DispatcherBuilder{
     pub fn new() -> Self{
         Self{
-            systems: HashMap::new()
+            systems: HashMap::new(),
+            preproc: StagesBuilder::new(),
+            logic: StagesBuilder::new(),
+            postproc: StagesBuilder::new(),            
         }
     }
     pub fn add<S: System>(&mut self){
@@ -58,6 +64,12 @@ impl DispatcherBuilder{
         }
 
         self.systems.insert(S::ID, Box::new(S::new()));
+
+        match S::TYPE{
+            SystemType::Preprocessor => self.preproc.add::<S>(),
+            SystemType::Logic => self.logic.add::<S>(),
+            SystemType::Postprocessor => self.postproc.add::<S>(),
+        }
     }
     // Create the registry with all the specifics about each system
     // TODO: Make it actually compile the specifics
@@ -77,75 +89,17 @@ impl DispatcherBuilder{
             }
         }
     }
-    // Build dependency 'graph' and resolve system order
-    fn build_run_order_graph(&self, SystemSet: HashSet<&'static str>) -> Vec<HashSet<&'static str>>{
-        
-    }
-    // Convert layers to stages & split them accordingly
-    fn build_stages(&mut self, mut Graph: Vec<HashSet<&'static str>>) -> Vec<Stage>{
-
-        let mut stages: Vec<Stage> = Vec::new();
-
-        // Now convert the 'graph' into stages 
-        for mut layer in Graph.drain(0..){
-
-            let mut stage = Vec::new();
-
-            // Convert layer to stages
-            for system_id in layer.drain(){
-
-                // Take the system Box out of the registry and 
-                // push it to the Dispatcher registry and the stage
-                let system = self.systems.remove(system_id).unwrap();
-
-                stage.push(system);
-
-                // Stage is full, push it outta here and init a new one for next iteration
-                if stage.len() == 5{
-                    stages.push(stage);
-                    stage = Vec::new()
-                }
-            }
-            // Push the incomplete stage just in case
-            // We can't have it for next iteration as systems may get their run order jumbled up
-            if !stage.is_empty(){
-                stages.push(stage);
-            }
-        };
-        
-        stages
-    }
     pub fn build(mut self) -> Dispatcher{
 
         self.verify_deps();
 
         let registry = self.compile_registry();
 
-        let mut preproc = HashSet::new();
-        let mut logic = HashSet::new();
-        let mut postproc = HashSet::new();
-
-        for system in self.systems.values(){
-            match system.sys_type(){
-                SystemType::Preprocessor => preproc.insert(system.id()),
-                SystemType::Logic => logic.insert(system.id()),
-                SystemType::Postprocessor => postproc.insert(system.id()),
-            };
-        }
-
-        let preproc_graph = self.build_run_order_graph(preproc);
-        let logic_graph = self.build_run_order_graph(logic);
-        let postproc_graph = self.build_run_order_graph(postproc);
-        
-        let preproc = self.build_stages(preproc_graph);
-        let logic = self.build_stages(logic_graph);
-        let postproc = self.build_stages(postproc_graph);
-
         Dispatcher{
             registry,
-            preproc,
-            logic,
-            postproc,
+            preproc: self.preproc.build(),
+            logic: self.logic.build(),
+            postproc: self.postproc.build(),
         }
     }
 }
