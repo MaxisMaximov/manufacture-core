@@ -1,8 +1,13 @@
 use std::collections::{HashMap, HashSet};
-use std::time::{Instant};
+use std::time::{Duration, Instant};
 
 use super::system::*;
 use super::world::World;
+
+const MAX_SYS_PER_STAGE: usize = 5;
+const TICKS_PER_SECOND: u64 = 20;
+
+const TICKRATE: Duration = Duration::from_millis(1000/TICKS_PER_SECOND);
 
 type Stage = Vec<Box<dyn SystemWrapper>>;
 
@@ -22,14 +27,23 @@ impl Dispatcher{
                     system.execute(World);
                 }
             }
+
             // -- LOGIC LOOP --
-            if previous_tick.elapsed().as_millis() < 50{
+            if previous_tick.elapsed() < TICKRATE{
+                // -- Logic systems --
                 for stage in self.logic.iter_mut(){
                     for system in stage.iter_mut(){
                         system.execute(World);
                     }
                 }
+                // -- Singlefires --
+
+                // -- Event Responders --
+
+                // -- Commands --
+                World.exec_commands();
             }
+
             // -- POSTPROCESSORS --
             for stage in self.postproc.iter_mut(){
                 for system in stage.iter_mut(){
@@ -142,7 +156,7 @@ impl StagesBuilder{
                         .unwrap()
                     );
 
-                if stages.last().unwrap().len() == 5{
+                if stages.last().unwrap().len() == MAX_SYS_PER_STAGE{
                     stages.push(Vec:: new());
                 }
             }
