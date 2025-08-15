@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 use super::system::*;
 use super::world::World;
@@ -7,7 +7,7 @@ use super::world::World;
 type Stage = Vec<Box<dyn SystemWrapper>>;
 
 pub struct Dispatcher{
-    registry: HashSet<&'static str>,
+    registry: HashMap<&'static str, SystemInfo>,
     preproc: Vec<Stage>,
     logic: Vec<Stage>,
     postproc: Vec<Stage>
@@ -43,7 +43,7 @@ impl Dispatcher{
 
 #[must_use]
 pub struct DispatcherBuilder{
-    systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
+    systems: HashMap<&'static str, SystemInfo>,
     preproc: StagesBuilder,
     logic: StagesBuilder,
     postproc: StagesBuilder,
@@ -63,7 +63,7 @@ impl DispatcherBuilder{
             panic!("ERROR: System {} already exists", S::ID)
         }
 
-        self.systems.insert(S::ID, Box::new(S::new()));
+        self.systems.insert(S::ID, SystemInfo::new::<S>());
 
         match S::TYPE{
             SystemType::Preprocessor => self.preproc.add::<S>(),
@@ -71,35 +71,42 @@ impl DispatcherBuilder{
             SystemType::Postprocessor => self.postproc.add::<S>(),
         }
     }
-    // Create the registry with all the specifics about each system
-    // TODO: Make it actually compile the specifics
-    // lol
-    fn compile_registry(&self) -> HashSet<&'static str>{
-        let mut registry = HashSet::new();
-        self.systems.keys().map(|system| registry.insert(*system));
-        registry
-    }
     // Verify dependencies of each system
     fn verify_deps(&self){
         for system in self.systems.values(){
-            for dep in system.depends(){
+            for dep in system.depends.iter(){
                 if !self.systems.contains_key(dep){
-                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id(), dep)
+                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id, dep)
                 }
             }
         }
     }
-    pub fn build(mut self) -> Dispatcher{
+    pub fn build(self) -> Dispatcher{
 
         self.verify_deps();
 
-        let registry = self.compile_registry();
-
         Dispatcher{
-            registry,
+            registry: self.systems,
             preproc: self.preproc.build(),
             logic: self.logic.build(),
             postproc: self.postproc.build(),
+        }
+    }
+}
+
+struct SystemInfo{
+    id: &'static str,
+    depends: &'static [&'static str],
+    run_ord: &'static [RunOrder],
+    sys_type: SystemType
+}
+impl SystemInfo{
+    fn new<S: System>() -> Self{
+        Self{
+            id: S::ID,
+            depends: S::DEPENDS,
+            run_ord: S::RUNORD,
+            sys_type: S::TYPE,
         }
     }
 }
