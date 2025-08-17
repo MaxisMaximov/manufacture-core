@@ -11,6 +11,12 @@ const TICKRATE: Duration = Duration::from_millis(1000/TICKS_PER_SECOND);
 
 type Stage = Vec<Box<dyn SystemWrapper>>;
 
+/// # System Dispatcher
+/// Handles the execution of the Systems within the app
+/// 
+/// Has 2 loops:
+/// - Staller Loop -- Runs every frame
+/// - Logic Loop - Runs at most N times per second, specified by the Tickrate
 pub struct Dispatcher{
     registry: HashMap<&'static str, SystemInfo>,
     preproc: Vec<Stage>,
@@ -18,6 +24,7 @@ pub struct Dispatcher{
     postproc: Vec<Stage>
 }
 impl Dispatcher{
+    /// Dispatch the systems
     pub fn dispatch(&mut self, World: &mut World){
         let mut previous_tick = Instant::now();
         loop{
@@ -29,7 +36,7 @@ impl Dispatcher{
             }
 
             // -- LOGIC LOOP --
-            if previous_tick.elapsed() < TICKRATE{
+            if previous_tick.elapsed() >= TICKRATE{
                 // -- Logic systems --
                 for stage in self.logic.iter_mut(){
                     for system in stage.iter_mut(){
@@ -55,6 +62,10 @@ impl Dispatcher{
     }
 }
 
+/// # Dispatcher Builder
+/// Handles the building of the Dispatcher without letting anything disrupt
+/// 
+/// Make sure to use `.build()` once you're done
 #[must_use]
 pub struct DispatcherBuilder{
     systems: HashMap<&'static str, SystemInfo>,
@@ -63,6 +74,7 @@ pub struct DispatcherBuilder{
     postproc: StagesBuilder,
 }
 impl DispatcherBuilder{
+    /// Start building a new Dispatcher
     pub fn new() -> Self{
         Self{
             systems: HashMap::new(),
@@ -71,6 +83,7 @@ impl DispatcherBuilder{
             postproc: StagesBuilder::new(),            
         }
     }
+    /// Add a system to the Dispatcher
     pub fn add<S: System>(&mut self){
 
         if self.systems.contains_key(S::ID){
@@ -85,7 +98,7 @@ impl DispatcherBuilder{
             SystemType::Postprocessor => self.postproc.add::<S>(),
         }
     }
-    // Verify dependencies of each system
+    /// Verify dependencies of each system
     fn verify_deps(&self){
         for system in self.systems.values(){
             for dep in system.depends.iter(){
@@ -95,6 +108,7 @@ impl DispatcherBuilder{
             }
         }
     }
+    /// Build the Dispatcher
     pub fn build(self) -> Dispatcher{
 
         self.verify_deps();
@@ -108,6 +122,10 @@ impl DispatcherBuilder{
     }
 }
 
+/// # System Information
+/// A collection of data for the Dispatcher's Registry to keep track of
+/// 
+/// Is typically only used as Metadata for debug purposes
 struct SystemInfo{
     id: &'static str,
     depends: &'static [&'static str],
@@ -125,21 +143,26 @@ impl SystemInfo{
     }
 }
 
+/// # Stages Builder
+/// Builds a stage graph for Dispatcher to execute using provided Systems
 struct StagesBuilder{
     systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
     graph: RunOrderGraph
 }
 impl StagesBuilder{
+    /// Start building a new collection of Stages
     fn new() -> Self{
         Self{
             systems: HashMap::new(),
             graph: RunOrderGraph::new(),
         }
     }
+    /// Add a System to this builder
     fn add<S: System>(&mut self){
         self.systems.insert(S::ID, Box::new(S::new()));
         self.graph.add::<S>();
     }
+    /// Build the Stages for DIspatcher to use
     fn build(mut self) -> Vec<Vec<Box<dyn SystemWrapper>>>{
 
         let mut stages = Vec::new();
@@ -166,18 +189,23 @@ impl StagesBuilder{
     }
 }
 
+/// # Run Order Graph
+/// Builds a System execution graph, ensuring specified Systems are ran at correct time
 struct RunOrderGraph{
     graph: Vec<HashMap<&'static str, &'static [RunOrder]>>
 }
 impl RunOrderGraph{
+    /// Start building a new graph
     fn new() -> Self{
         Self{
             graph: Vec::from([HashMap::new()]),
         }
     }
+    /// Add a System to this graph
     fn add<S: System>(&mut self){
         self.graph[0].insert(S::ID, S::RUNORD);
     }
+    /// Build the graph
     fn build(mut self) -> Vec<Vec<&'static str>>{
         // Welcome to indentation hell
         // Population: Graph Building
@@ -256,6 +284,8 @@ impl RunOrderGraph{
     }
 }
 
+/// # Run Order enum
+/// Specifies when a System should be run
 pub enum RunOrder{
     Before(&'static str),
     After(&'static str),
@@ -269,6 +299,17 @@ impl RunOrder{
     }
 }
 
+/// # System Type
+/// Specifies where the System should be within the Execution Loop
+/// 
+/// `Preprocessor` Systems are ran at the beggining of every frame  
+/// They are typically used to update Resources
+/// 
+/// `Logic` Systems are ran at most N times per second specified by the Tickrate  
+/// These systems run the actual logic of the game
+/// 
+/// `Postprocessor` Systems are ran at the end of every frame  
+/// They are typically output Systems like Audio and Rendering
 pub enum SystemType{
     Preprocessor,
     Logic,

@@ -14,6 +14,10 @@ use super::fetch::request::{Request, RequestData};
 /// 
 /// `DEPENDS` are the other Systems that must be run before the System can be
 /// 
+/// `RUNORD` specifies what Systems should this System be run before/after
+/// 
+/// `TYPE` defines where the System should be put within the Execution loop 
+/// 
 /// ## WARNING
 /// Make sure your System's ID does not collide with Systems fro other plugins
 pub trait System: 'static{
@@ -33,17 +37,16 @@ pub trait System: 'static{
 /// # System trait Wrapper
 /// A wrapper trait for Systems to safely dispatch them in the Dispatcher
 /// 
-/// Provides ID method for identifying the underlying System, Depends method for getting the it's dependencies
-/// and Execute method for running it
+/// Provides methods for accessing the specifics of the underlying System
 pub trait SystemWrapper{
     /// Get the underlying System's ID
     fn id(&self) -> &'static str;
     /// Get the underlying System's dependencies
     fn depends(&self) -> &'static [&'static str];
-
+    /// Get a list of run order conditions of the underlying System
     fn run_order(&self) -> &'static [RunOrder];
+    /// Get the type of the underlying System
     fn sys_type(&self) -> SystemType;
-
     /// Run the underlying System with specified World
     fn execute<'a>(&mut self, World: &'a mut World);
     
