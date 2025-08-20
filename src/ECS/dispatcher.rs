@@ -24,6 +24,10 @@ pub struct Dispatcher{
     postproc: Vec<Stage>
 }
 impl Dispatcher{
+    /// Start building a new Dispatcher
+    pub fn new() -> DispatcherBuilder{
+        DispatcherBuilder::new()
+    }
     /// Dispatch the systems
     pub fn dispatch(&mut self, World: &mut World){
         let mut previous_tick = Instant::now();
@@ -68,7 +72,7 @@ impl Dispatcher{
 /// Make sure to use `.build()` once you're done
 #[must_use]
 pub struct DispatcherBuilder{
-    systems: HashMap<&'static str, SystemInfo>,
+    registry: HashMap<&'static str, SystemInfo>,
     preproc: StagesBuilder,
     logic: StagesBuilder,
     postproc: StagesBuilder,
@@ -77,7 +81,7 @@ impl DispatcherBuilder{
     /// Start building a new Dispatcher
     pub fn new() -> Self{
         Self{
-            systems: HashMap::new(),
+            registry: HashMap::new(),
             preproc: StagesBuilder::new(),
             logic: StagesBuilder::new(),
             postproc: StagesBuilder::new(),            
@@ -86,11 +90,11 @@ impl DispatcherBuilder{
     /// Add a system to the Dispatcher
     pub fn add<S: System>(&mut self){
 
-        if self.systems.contains_key(S::ID){
+        if self.registry.contains_key(S::ID){
             panic!("ERROR: System {} already exists", S::ID)
         }
 
-        self.systems.insert(S::ID, SystemInfo::new::<S>());
+        self.registry.insert(S::ID, SystemInfo::new::<S>());
 
         match S::TYPE{
             SystemType::Preprocessor => self.preproc.add::<S>(),
@@ -100,9 +104,9 @@ impl DispatcherBuilder{
     }
     /// Verify dependencies of each system
     fn verify_deps(&self){
-        for system in self.systems.values(){
+        for system in self.registry.values(){
             for dep in system.depends.iter(){
-                if !self.systems.contains_key(dep){
+                if !self.registry.contains_key(dep){
                     panic!("ERROR: System {}'s dependency system {} does not exist", system.id, dep)
                 }
             }
@@ -114,7 +118,7 @@ impl DispatcherBuilder{
         self.verify_deps();
 
         Dispatcher{
-            registry: self.systems,
+            registry: self.registry,
             preproc: self.preproc.build(),
             logic: self.logic.build(),
             postproc: self.postproc.build(),
@@ -145,16 +149,17 @@ impl SystemInfo{
 
 /// # Stages Builder
 /// Builds a stage graph for Dispatcher to execute using provided Systems
+#[must_use]
 struct StagesBuilder{
     systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
-    graph: RunOrderGraph
+    graph: ROGraphBuilder
 }
 impl StagesBuilder{
     /// Start building a new collection of Stages
     fn new() -> Self{
         Self{
             systems: HashMap::new(),
-            graph: RunOrderGraph::new(),
+            graph: ROGraphBuilder::new(),
         }
     }
     /// Add a System to this builder
@@ -163,7 +168,7 @@ impl StagesBuilder{
         self.graph.add::<S>();
     }
     /// Build the Stages for DIspatcher to use
-    fn build(mut self) -> Vec<Vec<Box<dyn SystemWrapper>>>{
+    fn build(mut self) -> Vec<Stage>{
 
         let mut stages = Vec::new();
 
@@ -189,12 +194,13 @@ impl StagesBuilder{
     }
 }
 
-/// # Run Order Graph
+/// # Run Order Graph Builder
 /// Builds a System execution graph, ensuring specified Systems are ran at correct time
-struct RunOrderGraph{
+#[must_use]
+struct ROGraphBuilder{
     graph: Vec<HashMap<&'static str, &'static [RunOrder]>>
 }
-impl RunOrderGraph{
+impl ROGraphBuilder{
     /// Start building a new graph
     fn new() -> Self{
         Self{
