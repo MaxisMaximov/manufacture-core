@@ -152,79 +152,42 @@ impl SystemInfo{
 #[must_use]
 struct StagesBuilder{
     systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
-    graph: ROGraphBuilder
 }
 impl StagesBuilder{
     /// Start building a new collection of Stages
     fn new() -> Self{
         Self{
             systems: HashMap::new(),
-            graph: ROGraphBuilder::new(),
         }
     }
     /// Add a System to this builder
     fn add<S: System>(&mut self){
         self.systems.insert(S::ID, Box::new(S::new()));
-        self.graph.add::<S>();
-    }
-    /// Build the Stages for DIspatcher to use
-    fn build(mut self) -> Vec<Stage>{
-
-        let mut stages = Vec::new();
-
-        // We don't need to use `.iter()` as the final graph will not be used for anything else, we also own it
-        for layer in self.graph.build(){
-            stages.push(Vec::new());
-            for system_id in layer{
-                // Don't like that I have to use so many unwraps
-                stages.last_mut()
-                    .unwrap()
-                    .push(
-                        self.systems.remove(system_id)
-                        .unwrap()
-                    );
-
-                if stages.last().unwrap().len() == MAX_SYS_PER_STAGE{
-                    stages.push(Vec:: new());
-                }
-            }
-        }
-
-        stages
-    }
-}
-
-/// # Run Order Graph Builder
-/// Builds a System execution graph, ensuring specified Systems are ran at correct time
-#[must_use]
-struct ROGraphBuilder{
-    graph: Vec<HashMap<&'static str, &'static [RunOrder]>>
-}
-impl ROGraphBuilder{
-    /// Start building a new graph
-    fn new() -> Self{
-        Self{
-            graph: Vec::from([HashMap::new()]),
-        }
-    }
-    /// Add a System to this graph
-    fn add<S: System>(&mut self){
-        self.graph[0].insert(S::ID, S::RUNORD);
     }
     /// Build the graph
-    fn build(mut self) -> Vec<Vec<&'static str>>{
+    fn build_run_order_graph(&self) -> Vec<Vec<&'static str>>{
         // Welcome to indentation hell
         // Population: Graph Building
 
         // Here to prevent unnecessary reallocation
         let mut shifts = HashSet::new();
 
+        // Prepare the graph
+        // Yeah, it's kinda a mess
+        let mut graph: Vec<HashMap<&'static str, &'static [RunOrder]>> 
+            = Vec::from([
+                    self.systems.values()
+                                .map(|system|
+                                    (system.id(), system.run_order())).collect()
+                ]);
+
+
         // Essentially iterate until everything is resolved
         for layer_id in 0..{
 
             // Unwrap: We only push new layers when there were shifts on previous layers
             // If there were none, we would break out of the loop
-            let layer = self.graph.get(layer_id).unwrap();
+            let layer = graph.get(layer_id).unwrap();
 
             // Iterate over layer's systems to see which we should shift
             for (system_id, order_deps) in layer.iter(){
@@ -265,21 +228,18 @@ impl ROGraphBuilder{
             drop(layer);
 
             // Push a new layer and move all the shifted systems from current layer to next layer
-            self.graph.push(HashMap::new());
+            graph.push(HashMap::new());
             
             for system_id in shifts.drain(){ // Clear the shifts while we're at it
-            let orders = self.graph[layer_id].remove(system_id).unwrap();
-            self.graph[layer_id + 1].insert(
-                system_id,
-                orders
-                );
+                let orders = graph[layer_id].remove(system_id).unwrap();
+                graph[layer_id + 1].insert(system_id, orders);
             }
         };
 
         // Now convert it into a graph without the extra data
         let mut final_graph = Vec::new();
 
-        for mut layer in self.graph.drain(0..){
+        for mut layer in graph.drain(0..){
             final_graph.push(Vec::new());
             for (id, _) in layer.drain(){
                 final_graph.last_mut().unwrap().push(id);
@@ -287,6 +247,33 @@ impl ROGraphBuilder{
         }
 
         final_graph
+    }
+    /// Build the Stages for DIspatcher to use
+    fn build(mut self) -> Vec<Stage>{
+
+        let mut stages = Vec::new();
+
+        let graph = self.build_run_order_graph();
+
+        // We don't need to use `.iter()` as the final graph will not be used for anything else, we also own it
+        for layer in graph{
+            stages.push(Vec::new());
+            for system_id in layer{
+                // Don't like that I have to use so many unwraps
+                stages.last_mut()
+                    .unwrap()
+                    .push(
+                        self.systems.remove(system_id)
+                        .unwrap()
+                    );
+
+                if stages.last().unwrap().len() == MAX_SYS_PER_STAGE{
+                    stages.push(Vec:: new());
+                }
+            }
+        }
+
+        stages
     }
 }
 
