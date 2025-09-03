@@ -121,7 +121,7 @@ impl World{
 
         self.resources.insert(T::ID, RefCell::new(Box::new(T::new())));
     }
-    pub fn deregister_ref<T>(&mut self) where T: Resource{
+    pub fn deregister_res<T>(&mut self) where T: Resource{
         self.resources.remove(T::ID);
     }
 
@@ -174,6 +174,13 @@ impl World{
     pub fn end_tick(&mut self){
         self.exec_commands();
         self.events.get_mut().swap_buffers();
+    }
+
+    pub fn take_triggers(&mut self) -> Vec<&'static str>{
+        self.triggers.take()
+    }
+    pub fn take_commands(&mut self) -> Vec<Box<dyn CommandWrapper>>{
+        self.commands.take()
     }
 
     pub fn validate_token(&self, Token: &mut Token) -> bool{
