@@ -15,6 +15,7 @@ pub struct World{
     components: HashMap<&'static str, RefCell<Box<dyn StorageWrapper>>>,
     resources: HashMap<&'static str, RefCell<Box<dyn ResourceWrapper>>>,
     events: UnsafeCell<EventMap>,
+    triggers: RefCell<Vec<&'static str>>,
     commands: RefCell<Vec<Box<dyn CommandWrapper>>>
 }
 impl World{
@@ -26,6 +27,7 @@ impl World{
             components: HashMap::new(),
             resources: HashMap::new(),
             events: UnsafeCell::new(EventMap::new()),
+            triggers: RefCell::new(Vec::new()),
             commands: RefCell::new(Vec::new())
         }
     }
