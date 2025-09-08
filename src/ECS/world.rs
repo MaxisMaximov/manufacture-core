@@ -1,4 +1,4 @@
-use std::cell::{RefCell, Ref, RefMut, UnsafeCell};
+use std::cell::{RefCell, Ref, RefMut};
 use std::collections::{HashMap, BTreeMap, BTreeSet};
 
 use super::events::*;
@@ -14,7 +14,7 @@ pub struct World{
     next_free: BTreeSet<usize>,
     components: HashMap<&'static str, RefCell<Box<dyn StorageWrapper>>>,
     resources: HashMap<&'static str, RefCell<Box<dyn ResourceWrapper>>>,
-    events: UnsafeCell<EventBufferMap>,
+    events: EventBufferMap,
     triggers: RefCell<Vec<&'static str>>,
     commands: RefCell<Vec<Box<dyn CommandWrapper>>>
 }
@@ -26,7 +26,7 @@ impl World{
             next_free: BTreeSet::new(),
             components: HashMap::new(),
             resources: HashMap::new(),
-            events: UnsafeCell::new(EventBufferMap::new()),
+            events: EventBufferMap::new(),
             triggers: RefCell::new(Vec::new()),
             commands: RefCell::new(Vec::new())
         }
@@ -78,20 +78,11 @@ impl World{
     }
 
     pub fn get_event_reader<'a, T>(&'a self) -> EventReader<'a, T> where T: Event{
-        // SAFETY: Right now the entirety of the engine is single-threaded
-        // So we don't have to worry about two systems on sepparate threads
-        // colliding when they send/receive a new event
-        //
-        // This is because `EventMap` initializes a new queue for an event 
-        // if the queue for the current frame doesn't yet exist
-        // THAT, requires a mutable borrow
-        //
-        // TODO: Remove the Unsafe
-        unsafe{self.events.get().as_mut().unwrap().get_reader()}
+        self.events.get_reader()
     }
     pub fn get_event_writer<'a, T>(&'a self) -> EventWriter<'a, T> where T: Event{
         // SAFETY: Same as above
-        unsafe{self.events.get().as_mut().unwrap().get_writer()}
+        self.events.get_writer()
     }
 
     pub fn get_trigger_writer(&self) -> RefMut<'_, Vec<&'static str>>{
@@ -126,10 +117,10 @@ impl World{
     }
 
     pub fn register_event<T>(&mut self) where T: Event{
-        self.events.get_mut().register::<T>();
+        self.events.register::<T>();
     }
     pub fn deregister_event<T>(&mut self) where T: Event{
-        self.events.get_mut().deregister::<T>();
+        self.events.deregister::<T>();
     }
 
     pub fn spawn(&mut self) -> EntityBuilder{
@@ -160,8 +151,8 @@ impl World{
                 |idkfa| idkfa)
     }
 
-    pub fn swap_event_buffers(&self){
-        unsafe{self.events.get().as_mut().unwrap().swap_buffers()};
+    pub fn swap_event_buffers(&mut self){
+        self.events.swap_buffers();
     }
 
     pub fn take_triggers(&mut self) -> Vec<&'static str>{
