@@ -6,6 +6,7 @@ use ECS::resource::Resource;
 use ECS::events::Event;
 use super::{FetchRes, FetchResMut};
 use super::{EventReader, EventWriter};
+use super::{CommandWriter, TriggerWriter};
 
 /// # Request fetch trait
 /// Required for `Request` to know what system resources to fetch from the World
@@ -72,6 +73,21 @@ impl<E: Event> RequestData for EventWriter<'_, E>{
 
     fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
         World.get_event_writer()
+    }
+}
+
+impl RequestData for CommandWriter<'_>{
+    type Item<'b> = CommandWriter<'b>;
+
+    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+        World.get_command_writer()
+    }
+}
+impl RequestData for TriggerWriter<'_>{
+    type Item<'b> = TriggerWriter<'b>;
+
+    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+        World.get_trigger_writer()
     }
 }
 
