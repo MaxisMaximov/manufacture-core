@@ -316,18 +316,29 @@ impl RunOrder{
 }
 
 /// # System Type
-/// Specifies where the System should be within the Execution Loop
+/// Specifies where the System should be within the Execution Loop  
+/// 
+/// Systems work within 2 loops: Staller and Logic  
+/// Staller systems are ran every frame, Logic systems are ran at most N times per second, specified by the Tickrate
 /// 
 /// `Preprocessor` Systems are ran at the beggining of every frame  
 /// They are typically used to update Resources
 /// 
-/// `Logic` Systems are ran at most N times per second specified by the Tickrate  
-/// These systems run the actual logic of the game
+/// `Logic` Systems are the main Update systems that run the game logic, this is the default type
+/// 
+/// `Singlefire` Systems are ran at the will of other systems  
+/// To execute a system like this, another system needs to send a Trigger it through TriggerWriter  
+/// You cannot daisy-chain Singlefires, any Singlefires triggered by current tick Singlefires will be executed on the next tick
+/// 
+/// `EventResponder` Systems are ran when their respective Event is present within the Read Buffer, signified by the ID  
+/// They're effectively Logic Systems that listen for Events only
 /// 
 /// `Postprocessor` Systems are ran at the end of every frame  
 /// They are typically output Systems like Audio and Rendering
+#[derive(Default)]
 pub enum SystemType{
     Preprocessor,
+    #[default]
     Logic,
     Singlefire,
     EventResponder(&'static str),
