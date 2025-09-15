@@ -230,4 +230,9 @@ impl World{
     pub fn get_entities(&self) -> &BTreeMap<usize, Entity>{
         &self.entities
     }
+
+    /// Get the Event Map
+    pub fn get_events(&self) -> &EventBufferMap{
+        &self.events
+    }
 }
