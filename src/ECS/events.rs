@@ -54,8 +54,8 @@ impl EventBufferMap{
             panic!("ERROR: Conflicting Event IDs: {}", T::ID)
         }
         self.registry.insert(T::ID);
-        self.read_buffer.insert(T::ID, RefCell::new(Box::new(VecDeque::<T>::new())));
-        self.write_buffer.insert(T::ID, RefCell::new(Box::new(VecDeque::<T>::new())));
+        self.read_buffer.insert(T::ID, RefCell::new(Box::new(Vec::<T>::new())));
+        self.write_buffer.insert(T::ID, RefCell::new(Box::new(Vec::<T>::new())));
     }
     /// Deregister an event
     /// 
@@ -128,7 +128,7 @@ trait EventQueue{
     /// Check if there are any events in this Queue
     fn is_empty(&self) -> bool;
 }
-impl<E: Event> EventQueue for VecDeque<E>{
+impl<E: Event> EventQueue for Vec<E>{
     fn clear(&mut self) {
         self.clear();
     }
@@ -138,11 +138,11 @@ impl<E: Event> EventQueue for VecDeque<E>{
 }
 impl dyn EventQueue{
     /// Downcast to a reference of an event `T` queue
-    fn downcast_ref<T: Event>(&self) -> &VecDeque<T>{
-        unsafe{&*(self as *const dyn EventQueue as *const VecDeque<T>)}
+    fn downcast_ref<T: Event>(&self) -> &Vec<T>{
+        unsafe{&*(self as *const dyn EventQueue as *const Vec<T>)}
     }
     /// Downcast to a mutable reference of an event `T` queue
-    fn downcast_mut<T: Event>(&mut self) -> &mut VecDeque<T>{
-        unsafe{&mut *(self as *mut dyn EventQueue as *mut VecDeque<T>)}
+    fn downcast_mut<T: Event>(&mut self) -> &mut Vec<T>{
+        unsafe{&mut *(self as *mut dyn EventQueue as *mut Vec<T>)}
     }
 }
