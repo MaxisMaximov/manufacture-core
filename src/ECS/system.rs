@@ -24,9 +24,9 @@ pub trait System: 'static{
     type QUERY: QueryData;
     type REQUEST: RequestData;
     const ID: &'static str;
-    const DEPENDS: &'static [&'static str];
-    const RUNORD: &'static [RunOrder];
-    const TYPE: SystemType;
+    const DEPENDS: &'static [&'static str] = &[];
+    const RUNORD: &'static [RunOrder] = &[];
+    const TYPE: SystemType = SystemType::Logic;
 
     /// Create a new instance of this System
     fn new() -> Self;
