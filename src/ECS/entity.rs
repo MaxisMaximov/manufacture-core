@@ -11,16 +11,14 @@ use super::world::World;
 /// as well as what components it has on the given frame
 pub struct Entity{
     id: usize,
-    hash: u32,
-    pub(super) components: HashSet<&'static str>
+    hash: u32
 }
 impl Entity{
     /// Create a new Entity with given ID
     pub fn new(Id: usize) -> Self{
         Self{
             id: Id,
-            hash: rand::random(),
-            components: HashSet::new()
+            hash: rand::random()
         }
     }
     /// Get a Token for this Entity
@@ -38,10 +36,6 @@ impl Entity{
     /// Read this Entity's Hash
     pub fn hash(&self) -> u32{
         self.hash
-    }
-    /// Read what components this Entity has
-    pub fn components(&self) -> &HashSet<&'static str>{
-        &self.components
     }
 }
 
@@ -90,7 +84,6 @@ impl<'a> EntityBuilder<'a>{
     /// Add a specified component to the current Entity
     pub fn with<T: Component>(self, Comp: T) -> Self{
         self.world_ref.fetch_mut::<T>().insert(self.entity, Comp);
-        self.world_ref.get_entity_mut(&self.entity).unwrap().components.insert(T::ID);
         self
     }
 

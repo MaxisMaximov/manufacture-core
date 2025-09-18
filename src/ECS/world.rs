@@ -125,9 +125,6 @@ impl World{
     /// Every Entity with this component will have that component dropped
     pub fn deregister_comp<T>(&mut self) where T: Component{
         self.components.remove(T::ID);
-        for entity in self.entities.values_mut(){
-            entity.components.remove(T::ID);
-        }
     }
 
     /// Register a `T` resource in this World
