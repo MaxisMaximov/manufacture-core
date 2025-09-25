@@ -79,12 +79,32 @@ impl<C:Component> QueryData for &C{
     fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
         World.fetch::<C>()
     }
+    
+    type AccItem<'b> = &'b C;
+    type MutAccItem<'b> = &'b C;
+    
+    fn get<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>> {
+        Fetched.get(Index)
+    }
+    fn get_mut<'a>(Fetched: &'a mut Self::Item<'a>, Index: &usize) -> Option<Self::MutAccItem<'a>> {
+        Fetched.get(Index)
+    }    
 }
 impl<C: Component> QueryData for &mut C{
     type Item<'b> = FetchMut<'b, C>;
 
     fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
         World.fetch_mut::<C>()
+    }
+    
+    type AccItem<'b> = &'b C;
+    type MutAccItem<'b> = &'b mut C;
+    
+    fn get<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>> {
+        Fetched.get(Index)
+    }
+    fn get_mut<'a>(Fetched: &'a mut Self::Item<'a>, Index: &usize) -> Option<Self::MutAccItem<'a>> {
+        Fetched.get_mut(Index)
     }
 }
 
