@@ -14,9 +14,13 @@ use super::{Fetch, FetchMut};
 /// The return type `Item` is typically the type the trait gets implemented on
 pub trait QueryData{
     type Item<'b>;
+    type AccItem<'b>;
+    type MutAccItem<'b>;
 
     /// Fetch the data from the world
     fn fetch<'a>(World: &'a World) -> Self::Item<'a>;
+    fn get<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>>;
+    fn get_mut<'a>(Fetched: &'a mut Self::Item<'a>, Index: &usize) -> Option<Self::MutAccItem<'a>>;
 }
 
 /// # World Query
@@ -33,12 +37,19 @@ impl<'a, D: QueryData> Query<'a, D>{
         }
     }
 
-    pub fn get(&self, Index: &usize) -> Option<D>{
+    pub fn get(&'a self, Index: &usize) -> Option<D::AccItem<'a>>{
         if !self.entities.contains_key(Index){
             return None
         }
-        
-        todo!("Still figuring this out")
+
+        D::get(&self.data, Index)
+    }
+    pub fn get_mut(&'a mut self, Index: &usize) -> Option<D::MutAccItem<'a>>{
+        if !self.entities.contains_key(Index){
+            return None
+        }
+
+        D::get_mut(&mut self.data, Index)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = D>{
