@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::{Deref, DerefMut}};
 
-use crate::ECS;
+use crate::ECS::{self, storage::Storage};
 use ECS::entity::Entity;
 use ECS::world::World;
 use ECS::comp::Component;
@@ -52,9 +52,9 @@ impl<'a, D: QueryData> Query<'a, D>{
         D::get_mut(&mut self.data, Index)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = D>{
-        todo!("Still figuring this out")
-    }
+    // pub fn iter(&self) -> impl Iterator<Item = D>{
+    //     todo!("Still figuring this out")
+    // }
 }
 impl<'a, D:QueryData> Deref for Query<'a, D>{
     type Target = D::Item<'a>;
@@ -112,106 +112,42 @@ impl<C: Component> QueryData for &mut C{
 // Tuples
 ///////////////////////////////////////////////////////////////////////////////
 
-impl QueryData for (){
-    type Item<'b> = ();
+#[macro_export]
+macro_rules! query_impl {
+    ($($x:ident), *) => {
+        impl<$($x: QueryData), *> QueryData for ($($x), *){
+            type Item<'b> = ($($x::Item<'b>), *);
 
-    fn fetch<'a>(_World: &'a World) -> Self::Item<'a>{}
-}
-impl<A, B> QueryData for (A, B)
-where 
-    A: QueryData, 
-    B: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>);
+            fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+                ($($x::fetch(World)), *)
+            }
 
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World))
+            type AccItem<'b> = ($($x::AccItem<'b>), *);
+            type MutAccItem<'b> = ($($x::MutAccItem<'b>), *);
+            
+            fn get<'a>(($($x), *): &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>> {
+                Some(
+                    ($($x::get($x, Index)?), *)
+                )
+            }
+            fn get_mut<'a>(($($x), *): &'a mut Self::Item<'a>, Index: &usize) -> Option<Self::MutAccItem<'a>> {
+                Some(
+                    ($($x::get_mut($x, Index)?), *)
+                )
+            }
+        }
     }
 }
-impl<A, B, C> QueryData for (A, B, C)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>);
 
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World))
-    }
-}
-impl<A, B, C, D> QueryData for (A, B, C, D)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData,
-    D: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>);
 
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World))
-    }
-}
-impl<A, B, C, D, E> QueryData for (A, B, C, D, E)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData,
-    D: QueryData,
-    E: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>, E::Item<'b>);
-
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World), E::fetch(World))
-    }
-}
-impl<A, B, C, D, E, F> QueryData for (A, B, C, D, E, F)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData,
-    D: QueryData,
-    E: QueryData,
-    F: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>, E::Item<'b>, F::Item<'b>);
-
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World), E::fetch(World), F::fetch(World))
-    }
-}
-impl<A, B, C, D, E, F, G> QueryData for (A, B, C, D, E, F, G)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData,
-    D: QueryData,
-    E: QueryData,
-    F: QueryData,
-    G: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>, E::Item<'b>, F::Item<'b>, G::Item<'b>);
-
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World), E::fetch(World), F::fetch(World), G::fetch(World))
-    }
-}
-impl<A, B, C, D, E, F, G, H> QueryData for (A, B, C, D, E, F, G, H)
-where 
-    A: QueryData,
-    B: QueryData,
-    C: QueryData,
-    D: QueryData,
-    E: QueryData,
-    F: QueryData,
-    G: QueryData,
-    H: QueryData
-{
-    type Item<'b> = (A::Item<'b>, B::Item<'b>, C::Item<'b>, D::Item<'b>, E::Item<'b>, F::Item<'b>, G::Item<'b>, H::Item<'b>);
-
-    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
-        (A::fetch(World), B::fetch(World), C::fetch(World), D::fetch(World), E::fetch(World), F::fetch(World), G::fetch(World), H::fetch(World))
-    }
-}
+query_impl!(A, B);
+query_impl!(A, B, C);
+query_impl!(A, B, C, D);
+query_impl!(A, B, C, D, E);
+query_impl!(A, B, C, D, E, F);
+query_impl!(A, B, C, D, E, F, G);
+query_impl!(A, B, C, D, E, F, G, H);
+query_impl!(A, B, C, D, E, F, G, H, I);
+query_impl!(A, B, C, D, E, F, G, H, I, J);
+query_impl!(A, B, C, D, E, F, G, H, I, J, K);
+query_impl!(A, B, C, D, E, F, G, H, I, J, K, L);
