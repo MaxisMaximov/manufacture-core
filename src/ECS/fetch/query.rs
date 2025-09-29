@@ -52,9 +52,20 @@ impl<'a, D: QueryData> Query<'a, D>{
         D::get_mut(&mut self.data, Index)
     }
 
-    // pub fn iter(&self) -> impl Iterator<Item = D>{
-    //     todo!("Still figuring this out")
-    // }
+    pub fn iter(&'a self) -> Iter<'a, D>{
+        Iter{
+            data: &self.data,
+            ent_iter: self.entities.keys(),
+        }
+    }
+
+    pub fn iter_mut(&'a mut self) -> IterMut<'a, D>{
+        unimplemented!("IterMut has a bunch of errors that prevent it from being used\nManually iterate over the Query mutably for now");
+        IterMut{
+            data: &mut self.data,
+            ent_iter: self.entities.keys(),
+        }
+    }
 }
 impl<'a, D:QueryData> Deref for Query<'a, D>{
     type Target = D::Item<'a>;
@@ -66,6 +77,43 @@ impl<'a, D:QueryData> Deref for Query<'a, D>{
 impl<'a, D: QueryData> DerefMut for Query<'a, D>{
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
+    }
+}
+
+use std::collections::btree_map::Keys;
+pub struct Iter<'a, D: QueryData>{
+    data: &'a D::Item<'a>,
+    ent_iter: Keys<'a, usize, Entity>
+}
+impl<'a, D: QueryData> Iterator for Iter<'a, D>{
+    type Item = D::AccItem<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop{
+            let index = self.ent_iter.next()?;
+
+            if let Some(fetched) = D::get(self.data, index){
+                return Some(fetched)
+            }
+        }
+    }
+}
+
+pub struct IterMut<'a, D: QueryData>{
+    data: &'a mut D::Item<'a>,
+    ent_iter: Keys<'a, usize, Entity>
+}
+impl<'a, D: QueryData> Iterator for IterMut<'a, D>{
+    type Item = D::MutAccItem<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop{
+            let index = *self.ent_iter.next()?;
+
+            // if let Some(fetched) = D::get_mut(self.data, &index){
+            //     return Some(fetched)
+            // }
+        }
     }
 }
 
