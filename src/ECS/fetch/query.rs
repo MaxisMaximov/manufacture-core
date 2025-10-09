@@ -46,13 +46,14 @@ impl<'a, D: QueryData> Query<'a, D>{
 
         D::get(&self.data, Index)
     }
-    pub fn get_from_token(&'a self, Token: &entity::Token) -> Option<D::AccItem<'a>>{
-        let entity = self.entities.get(&Token.id())?;
-        if entity.hash() != Token.hash(){
-            return None
+    pub fn get_from_token(&'a self, Token: &mut entity::Token) -> Option<D::AccItem<'a>>{
+        // We only accept valid Tokens
+        if self.validate_token(Token){
+            D::get(&self.data, &Token.id())
+        }else{
+            None
         }
 
-        D::get(&self.data, &Token.id())
     }
     pub fn get_mut(&'a mut self, Index: &usize) -> Option<D::MutAccItem<'a>>{
         if !self.entities.contains_key(Index){
@@ -61,15 +62,14 @@ impl<'a, D: QueryData> Query<'a, D>{
         
         D::get_mut(&mut self.data, Index)
     }
-    pub fn get_from_token_mut(&'a mut self, Token: &entity::Token) -> Option<D::MutAccItem<'a>>{
-        let entity = self.entities.get(&Token.id())?;
-        if entity.hash() != Token.hash(){
-            return None
+    pub fn get_from_token_mut(&'a mut self, Token: &mut entity::Token) -> Option<D::MutAccItem<'a>>{
+        // We only accept valid Tokens
+        if self.validate_token(Token){
+            D::get_mut(&mut self.data, &Token.id())
+        }else{
+            None
         }
-
-        D::get_mut(&mut self.data, &Token.id())
     }
-
     pub fn iter(&'a self) -> Iter<'a, D>{
         Iter{
             data: &self.data,
@@ -85,10 +85,15 @@ impl<'a, D: QueryData> Query<'a, D>{
     }
 
     pub fn validate_token(&self, Token: &mut entity::Token) -> bool{
-        if let Some(entity) = self.entities.get(&Token.id()){
-            Token.validate(entity)
-        }else{
+        // If a Token is invalid, it can never again be valid
+        if !Token.valid(){
             false
+        }else{
+            if let Some(entity) = self.entities.get(&Token.id()){
+                Token.validate(entity)
+            }else{
+                false
+            }
         }
     }
 }
@@ -137,7 +142,7 @@ impl<'a, D: QueryData> Iterator for IterMut<'a, D>{
 
     fn next(&mut self) -> Option<Self::Item> {
         loop{
-            let index = *self.ent_iter.next()?;
+            let index = self.ent_iter.next()?;
 
             if let Some(fetched) = 
                 D::get_mut(
@@ -160,7 +165,7 @@ impl<'a, D: QueryData> Iterator for IterMut<'a, D>{
 
                     // Unless I redo the engine 4th time in a row
                     unsafe{&mut *(self.data as *mut D::Item<'a>)}, 
-                    &index
+                    index
                 )
             {
                 return Some(fetched)
