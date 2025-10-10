@@ -390,6 +390,23 @@ macro_rules! query_impl {
     }
 }
 
+macro_rules! filter_impl {
+    ($($x:tt), *) => {
+        #[allow(non_snake_case)]
+        impl<$($x: QueryFilter), *> QueryFilter for ($($x), *){
+            type Item<'b> = ($($x::Item<'b>), *);
+
+            fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+                ($($x::fetch(World)), *)
+            }
+
+            fn filter<'a>(($($x), *): &'a Self::Item<'a>, Index: &usize) -> bool {
+                $($x::filter($x, Index)) && *
+            }
+        }
+    }
+}
+
 
 query_impl!(A, B);
 query_impl!(A, B, C);
@@ -402,3 +419,15 @@ query_impl!(A, B, C, D, E, F, G, H, I);
 query_impl!(A, B, C, D, E, F, G, H, I, J);
 query_impl!(A, B, C, D, E, F, G, H, I, J, K);
 query_impl!(A, B, C, D, E, F, G, H, I, J, K, L);
+
+filter_impl!(A, B);
+filter_impl!(A, B, C);
+filter_impl!(A, B, C, D);
+filter_impl!(A, B, C, D, E);
+filter_impl!(A, B, C, D, E, F);
+filter_impl!(A, B, C, D, E, F, G);
+filter_impl!(A, B, C, D, E, F, G, H);
+filter_impl!(A, B, C, D, E, F, G, H, I);
+filter_impl!(A, B, C, D, E, F, G, H, I, J);
+filter_impl!(A, B, C, D, E, F, G, H, I, J, K);
+filter_impl!(A, B, C, D, E, F, G, H, I, J, K, L);
