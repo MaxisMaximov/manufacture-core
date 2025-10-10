@@ -41,6 +41,35 @@ pub trait QueryFilter{
     /// Check if the given entity passes this filter
     fn filter<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> bool;
 }
+pub struct With<C: Component>{
+    _phantom: PhantomData<C>
+}
+impl<C: Component> QueryFilter for With<C>{
+    type Item<'b> = Fetch<'b, C>;
+
+    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+        World.fetch::<C>()
+    }
+
+    fn filter<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> bool {
+        Fetched.get(Index).is_some()
+    }
+}
+
+pub struct Without<C: Component>{
+    _phantom: PhantomData<C>
+}
+impl<C: Component> QueryFilter for Without<C>{
+    type Item<'b> = Fetch<'b, C>;
+
+    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+        World.fetch::<C>()
+    }
+
+    fn filter<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> bool {
+        Fetched.get(Index).is_none()
+    }
+}
 /// # World Query
 /// Struct that queries the World and fetches the specified `QueryData`, usually Components
 /// 
