@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ops::{Deref, DerefMut}};
+use std::{collections::BTreeMap, marker::PhantomData, ops::{Deref, DerefMut}};
 
 use crate::ECS;
 use ECS::entity;
@@ -26,7 +26,7 @@ pub trait QueryData{
     type AccItem<'b>;
     type MutAccItem<'b>;
 
-    /// Fetch the data from the world
+    /// Fetch the data from the World
     fn fetch<'a>(World: &'a World) -> Self::Item<'a>;
     /// Access given Entity's data immutably
     fn get<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>>;
@@ -34,6 +34,19 @@ pub trait QueryData{
     fn get_mut<'a>(Fetched: &'a mut Self::Item<'a>, Index: &usize) -> Option<Self::MutAccItem<'a>>;
 }
 
+/// # Query Filter trait
+/// Required for Query to filter out entities with matching components.  
+/// 
+/// It is essentially a miniature System that checks whether an Entity meets  
+/// the requirements for the main System to proceed
+/// 
+/// It is implemented by default on `With` and `Without` structs, as well as tuples up to 12 elements
+/// 
+/// The data Filter fetches must be **read-only**,  
+/// they're not fetching data to be modified,  
+/// only to read if the requirements are met
+/// 
+/// `Item` is the data the filter needs to filter out the Entity
 pub trait QueryFilter{
     type Item<'b>;
     /// Fetch the needed data from the World
@@ -41,6 +54,12 @@ pub trait QueryFilter{
     /// Check if the given entity passes this filter
     fn filter<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> bool;
 }
+
+/// # Query Filter: With
+/// Only allows Entities that have the specified component to pass through
+/// 
+/// There is no need to include it in the filters if you fetch the component,  
+/// Query automatically checks whether the requested components exist for an Entity
 pub struct With<C: Component>{
     _phantom: PhantomData<C>
 }
@@ -56,6 +75,8 @@ impl<C: Component> QueryFilter for With<C>{
     }
 }
 
+/// # Query Filter: Without
+/// Only allows Entities without the specified component to pass through
 pub struct Without<C: Component>{
     _phantom: PhantomData<C>
 }
@@ -73,12 +94,16 @@ impl<C: Component> QueryFilter for Without<C>{
 /// # World Query
 /// Struct that queries the World and fetches the specified `QueryData`, usually Components
 /// 
-/// To access the underlying Storages directly, use a dereference `*`
+/// You can specify filters for the Query to use when getting Entities, such as `With` and `Without`.  
+/// Any type implementing `QueryFilter` can be used
 /// 
 /// To get a specific Entity's set of components, use `get`, `get_mut`, and their Token variations.  
 /// Token variations of getters are preferred over normal getters
 /// 
 /// To iterate over all entities with all queried components, use `iter` and `iter_mut`
+/// 
+/// To access the underlying Storages directly, use a dereference `*`.  
+/// Note that Filters will not apply if you do this
 /// 
 /// Query automatically validates Tokens in Getter functions, they can also be  
 /// manually validated via `validate_token`
@@ -106,7 +131,7 @@ impl<'a, D: QueryData, F: QueryFilter> Query<'a, D, F>{
     /// otherwise it returns `None`
     pub fn get(&'a self, Index: &usize) -> Option<D::AccItem<'a>>{
         if self.entities.contains_key(Index) && F::filter(&self.filter_data, Index){
-        D::get(&self.data, Index)
+            D::get(&self.data, Index)
         }else{
             None
         }
@@ -221,10 +246,10 @@ impl<'a, D: QueryData, F: QueryFilter> Iterator for Iter<'a, D, F>{
         loop{
             let index = self.ent_iter.next()?;
 
-
+            
             if let Some(fetched) = D::get(self.data, index){
                 if F::filter(self.filters, index){
-                return Some(fetched)
+                    return Some(fetched)
                 }
             }
         }
@@ -270,7 +295,7 @@ impl<'a, D: QueryData, F: QueryFilter> Iterator for IterMut<'a, D, F>{
                 )
             {
                 if F::filter(self.filters, index){
-                return Some(fetched)
+                    return Some(fetched)
                 }
             }
         }

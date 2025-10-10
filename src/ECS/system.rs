@@ -10,6 +10,8 @@ use super::fetch::request::{Request, RequestData};
 /// 
 /// `QUERY` is the query for components the System wants from the Word
 /// 
+/// `FILTERS` are filters for Query to use when fetching data
+/// 
 /// `REQUEST` are the System resources the System wants from the World, like Resources, Event Readers/Writers and Command Writer
 /// 
 /// `ID` is what the System will be identified by for future overrides
