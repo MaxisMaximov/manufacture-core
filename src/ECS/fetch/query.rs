@@ -53,15 +53,17 @@ pub trait QueryFilter{
 /// 
 /// Query automatically validates Tokens in Getter functions, they can also be  
 /// manually validated via `validate_token`
-pub struct Query<'a, D: QueryData>{
+pub struct Query<'a, D: QueryData, F: QueryFilter>{
     entities: &'a BTreeMap<usize, Entity>,
+    filter_data: F::Item<'a>,
     data: D::Item<'a>
 }
-impl<'a, D: QueryData> Query<'a, D>{
+impl<'a, D: QueryData, F: QueryFilter> Query<'a, D, F>{
     /// Fetch `D`ata from the World
     pub fn fetch(World: &'a World) -> Self{
         Self{
             entities: World.get_entities(),
+            filter_data: F::fetch(World),
             data: D::fetch(World)
         }
     }
@@ -74,11 +76,11 @@ impl<'a, D: QueryData> Query<'a, D>{
     /// Note that it returns `Some` only if the entity has *all* requested components,  
     /// otherwise it returns `None`
     pub fn get(&'a self, Index: &usize) -> Option<D::AccItem<'a>>{
-        if !self.entities.contains_key(Index){
-            return None
-        }
-
+        if self.entities.contains_key(Index) && F::filter(&self.filter_data, Index){
         D::get(&self.data, Index)
+        }else{
+            None
+        }
     }
     /// Get a set of components for the Entity tracked by the Token.  
     /// It automatically validates the given Token as well
@@ -88,7 +90,7 @@ impl<'a, D: QueryData> Query<'a, D>{
     pub fn get_from_token(&'a self, Token: &mut entity::Token) -> Option<D::AccItem<'a>>{
         // We only accept valid Tokens
         if self.validate_token(Token){
-            D::get(&self.data, &Token.id())
+            self.get(&Token.id())
         }else{
             None
         }
@@ -106,7 +108,9 @@ impl<'a, D: QueryData> Query<'a, D>{
         if !self.entities.contains_key(Index){
             return None
         }
-        
+        if !F::filter(&self.filter_data, Index){
+            return None
+        }
         D::get_mut(&mut self.data, Index)
     }
     /// Get a mutable set of components for the Entity tracked by the Token.  
@@ -117,7 +121,7 @@ impl<'a, D: QueryData> Query<'a, D>{
     pub fn get_from_token_mut(&'a mut self, Token: &mut entity::Token) -> Option<D::MutAccItem<'a>>{
         // We only accept valid Tokens
         if self.validate_token(Token){
-            D::get_mut(&mut self.data, &Token.id())
+            self.get_mut(&Token.id())
         }else{
             None
         }
@@ -126,18 +130,20 @@ impl<'a, D: QueryData> Query<'a, D>{
     /// Iterate over all matching entities immutably  
     /// 
     /// Entities that don't have at least one matching component will not be iterated over
-    pub fn iter(&'a self) -> Iter<'a, D>{
+    pub fn iter(&'a self) -> Iter<'a, D, F>{
         Iter{
             data: &self.data,
+            filters: &self.filter_data,
             ent_iter: self.entities.keys(),
         }
     }
     /// Iterate over all matching entities mutably  
     /// 
     /// Entities that don't have at least one matching component will not be iterated over
-    pub fn iter_mut(&'a mut self) -> IterMut<'a, D>{
+    pub fn iter_mut(&'a mut self) -> IterMut<'a, D, F>{
         IterMut{
             data: &mut self.data,
+            filters: &self.filter_data,
             ent_iter: self.entities.keys(),
         }
     }
@@ -158,14 +164,14 @@ impl<'a, D: QueryData> Query<'a, D>{
         }
     }
 }
-impl<'a, D:QueryData> Deref for Query<'a, D>{
+impl<'a, D:QueryData, F: QueryFilter> Deref for Query<'a, D, F>{
     type Target = D::Item<'a>;
 
     fn deref(&self) -> &Self::Target {
         &self.data
     }
 }
-impl<'a, D: QueryData> DerefMut for Query<'a, D>{
+impl<'a, D: QueryData, F: QueryFilter> DerefMut for Query<'a, D, F>{
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
@@ -178,19 +184,23 @@ impl<'a, D: QueryData> DerefMut for Query<'a, D>{
 use std::collections::btree_map::Keys;
 /// # Query Iterator
 /// Iterates over entities that have all matching components of `D`ata immutably
-pub struct Iter<'a, D: QueryData>{
+pub struct Iter<'a, D: QueryData, F: QueryFilter>{
     data: &'a D::Item<'a>,
+    filters: &'a F::Item<'a>,
     ent_iter: Keys<'a, usize, Entity>
 }
-impl<'a, D: QueryData> Iterator for Iter<'a, D>{
+impl<'a, D: QueryData, F: QueryFilter> Iterator for Iter<'a, D, F>{
     type Item = D::AccItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop{
             let index = self.ent_iter.next()?;
 
+
             if let Some(fetched) = D::get(self.data, index){
+                if F::filter(self.filters, index){
                 return Some(fetched)
+                }
             }
         }
     }
@@ -198,11 +208,12 @@ impl<'a, D: QueryData> Iterator for Iter<'a, D>{
 
 /// # Mutable Query Iterator
 /// Iterates over entities that have all matching components of `D`ata mutably
-pub struct IterMut<'a, D: QueryData>{
+pub struct IterMut<'a, D: QueryData, F: QueryFilter>{
     data: &'a mut D::Item<'a>,
+    filters: &'a F::Item<'a>,
     ent_iter: Keys<'a, usize, Entity>
 }
-impl<'a, D: QueryData> Iterator for IterMut<'a, D>{
+impl<'a, D: QueryData, F: QueryFilter> Iterator for IterMut<'a, D, F>{
     type Item = D::MutAccItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -233,7 +244,9 @@ impl<'a, D: QueryData> Iterator for IterMut<'a, D>{
                     index
                 )
             {
+                if F::filter(self.filters, index){
                 return Some(fetched)
+                }
             }
         }
     }
