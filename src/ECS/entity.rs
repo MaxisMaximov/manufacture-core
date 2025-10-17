@@ -2,6 +2,8 @@ use super::comp::Component;
 use super::storage::Storage;
 use super::world::World;
 
+type Hash = u32;
+
 /// # Entity struct
 /// Identifies a single Entity within the World
 /// 
@@ -9,7 +11,7 @@ use super::world::World;
 /// as well as what components it has on the given frame
 pub struct Entity{
     id: usize,
-    hash: u32
+    hash: Hash
 }
 impl Entity{
     /// Create a new Entity with given ID
@@ -32,7 +34,7 @@ impl Entity{
         self.id
     }
     /// Read this Entity's Hash
-    pub fn hash(&self) -> u32{
+    pub fn hash(&self) -> Hash{
         self.hash
     }
 }
@@ -46,7 +48,7 @@ impl Entity{
 /// This is checked through the Hash value
 pub struct Token{
     id: usize,
-    hash: u32,
+    hash: Hash,
     valid: bool
 }
 impl Token{
@@ -55,7 +57,7 @@ impl Token{
         self.id
     }
     /// Read the tracked Entity's Hash
-    pub fn hash(&self) -> u32{
+    pub fn hash(&self) -> Hash{
         self.hash
     }
     /// Read if the Token is valid
@@ -64,9 +66,12 @@ impl Token{
     }
     /// Check if the Token is still valid within the World
     /// 
-    /// Updates it's own `valid` flag and returns it
+    /// Updates it's own `valid` flag and returns it.  
+    /// If the IDs don't match, it doesn't do anything
     pub fn validate(&mut self, Entity: &Entity) -> bool{
-        self.valid = self.hash == Entity.hash();
+        if self.id == Entity.id(){
+            self.valid = self.hash == Entity.hash();
+        }
         self.valid
     }
 }
