@@ -20,3 +20,10 @@ pub type EventWriter<'a, E: Event> = RefMut<'a, Vec<E>>;
 
 pub type CommandWriter<'a> = RefMut<'a, Vec<Box<dyn CommandWrapper>>>;
 pub type TriggerWriter<'a> = RefMut<'a, Vec<&'static str>>;
+
+///////////////////////////////////////////////////////////////////////////////
+// Reexports
+///////////////////////////////////////////////////////////////////////////////
+
+pub use query::*;
+pub use request::*;

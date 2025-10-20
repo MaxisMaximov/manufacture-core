@@ -7,7 +7,7 @@ use super::comp::*;
 use super::storage::*;
 use super::fetch::*;
 use super::entity::*;
-use super::commands::CommandWrapper;
+use super::commands::*;
 
 /// # ECS World
 /// Stores all the data within ECS:

@@ -2,8 +2,7 @@ use crate::ECS::fetch::query::QueryFilter;
 
 use super::world::World;
 use super::dispatcher::{RunOrder, SystemType};
-use super::fetch::query::{QueryData, Query};
-use super::fetch::request::{Request, RequestData};
+use super::fetch::*;
 
 /// # System trait
 /// Defines a System that will be run on the World
