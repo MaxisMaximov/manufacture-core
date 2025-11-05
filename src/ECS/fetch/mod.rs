@@ -39,6 +39,13 @@ impl<E: Event> EventWriter<'_, E>{
         self.inner.push(Event);
     }
 }
+
+pub struct CommandWriter<'a>{
+    pub(super) inner: RefMut<'a, Vec<Box<dyn CommandWrapper>>>
+}
+pub struct TriggerWriter<'a>{
+    pub(super) inner: RefMut<'a, Vec<&'static str>>
+}
 }
     }
 
