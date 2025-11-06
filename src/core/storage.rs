@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use super::ECS;
 
@@ -52,6 +52,36 @@ impl<C: Component> Storage<C> for HashMapStorage<C>{
     fn new() -> Self {
         Self{
             inner: HashMap::new(),
+        }
+    }
+
+    fn insert(&mut self, Index: usize, Comp: C) {
+        self.inner.insert(Index, Comp);
+    }
+    fn remove(&mut self, Index: &usize) {
+        self.inner.remove(Index);
+    }
+
+    fn get(&self, Index: &usize) -> Option<&C> {
+        self.inner.get(Index)
+    }
+    fn get_mut(&mut self, Index: &usize) -> Option<&mut C> {
+        self.inner.get_mut(Index)
+    }
+}
+
+/// # BTreeMap Storage
+/// 
+/// Essentially a wrapper over BTreeMap
+/// 
+/// It's generally recommended to use this for components that will be on nearly all entities
+pub struct BTreeMapStorage<C: Component>{
+    inner: BTreeMap<usize, C>
+}
+impl<C: Component> Storage<C> for BTreeMapStorage<C>{
+    fn new() -> Self {
+        Self{
+            inner: BTreeMap::new(),
         }
     }
 
