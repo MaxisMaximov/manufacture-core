@@ -22,7 +22,7 @@ impl DeltaT{
     /// Set the new Delta Frame value
     /// 
     /// ## DO NOT USE THIS
-    /// Only the DIspatcher is allowed to modify the Delta
+    /// Only the Dispatcher is allowed to modify the Delta
     pub fn set_delta_frame(&mut self, Delta: u128){
         self.delta_frame = Delta
     }
