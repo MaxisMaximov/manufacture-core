@@ -49,6 +49,26 @@ impl<'a, D: RequestData> DerefMut for Request<'a, D>{
     }
 }
 
+/// # Query request
+/// An identifier for `WorldQuery` to make data acquisition easier
+/// 
+/// **Below documentation for `WorldQuery`**
+/// 
+/// Struct that queries the World and fetches the specified `QueryData`, usually Components
+/// 
+/// You can specify filters for the Query to use when getting Entities, such as `With` and `Without`.  
+/// Any type implementing `QueryFilter` can be used
+/// 
+/// To get a specific Entity's set of components, use `get`, `get_mut`, and their Token variations.  
+/// Token variations of getters are preferred over normal getters
+/// 
+/// To iterate over all entities with all queried components, use `iter` and `iter_mut`
+/// 
+/// To access the underlying Storages directly, use a dereference `*`.  
+/// Note that Filters will not apply if you do this
+/// 
+/// Query automatically validates Tokens in Getter functions, they can also be  
+/// manually validated via `validate_token`
 pub struct Query<D: QueryData, F: QueryFilter>(PhantomData<(D, F)>);
 impl <D: QueryData, F: QueryFilter> RequestData for Query<D, F>{
     type Item<'b> = WorldQuery<'b, D, F>;
