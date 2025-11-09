@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
 use crate::ECS;
+use crate::ECS::fetch::{WorldQuery, QueryData, QueryFilter};
 use ECS::world::World;
 use ECS::resource::Resource;
 use ECS::events::Event;
@@ -45,6 +46,15 @@ impl<'a, D: RequestData> Deref for Request<'a, D>{
 impl<'a, D: RequestData> DerefMut for Request<'a, D>{
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
+    }
+}
+
+pub struct Query<D: QueryData, F: QueryFilter>(PhantomData<(D, F)>);
+impl <D: QueryData, F: QueryFilter> RequestData for Query<D, F>{
+    type Item<'b> = WorldQuery<'b, D, F>;
+
+    fn fetch<'a>(World: &'a World) -> Self::Item<'a> {
+        WorldQuery::fetch(World)
     }
 }
 
