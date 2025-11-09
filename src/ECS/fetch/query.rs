@@ -103,12 +103,12 @@ impl<C: Component> QueryFilter for Without<C>{
 /// 
 /// Query automatically validates Tokens in Getter functions, they can also be  
 /// manually validated via `validate_token`
-pub struct Query<'a, D: QueryData, F: QueryFilter>{
+pub struct WorldQuery<'a, D: QueryData, F: QueryFilter>{
     entities: &'a BTreeMap<usize, Entity>,
     filter_data: F::Item<'a>,
     data: D::Item<'a>
 }
-impl<'a, D: QueryData, F: QueryFilter> Query<'a, D, F>{
+impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
     /// Fetch `D`ata from the World
     pub fn fetch(World: &'a World) -> Self{
         Self{
@@ -210,14 +210,14 @@ impl<'a, D: QueryData, F: QueryFilter> Query<'a, D, F>{
         self.entities.get(&Token.id()).is_some_and(|entity| Token.validate(entity))
     }
 }
-impl<'a, D:QueryData, F: QueryFilter> Deref for Query<'a, D, F>{
+impl<'a, D:QueryData, F: QueryFilter> Deref for WorldQuery<'a, D, F>{
     type Target = D::Item<'a>;
 
     fn deref(&self) -> &Self::Target {
         &self.data
     }
 }
-impl<'a, D: QueryData, F: QueryFilter> DerefMut for Query<'a, D, F>{
+impl<'a, D: QueryData, F: QueryFilter> DerefMut for WorldQuery<'a, D, F>{
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
