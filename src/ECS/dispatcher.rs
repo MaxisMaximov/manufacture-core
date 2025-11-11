@@ -194,17 +194,23 @@ impl SystemInfo{
 #[must_use]
 struct StagesBuilder{
     systems: HashMap<&'static str, Box<dyn SystemWrapper>>,
+    overrides: Vec<Box<dyn SystemWrapper>>
 }
 impl StagesBuilder{
     /// Start building a new collection of Stages
     fn new() -> Self{
         Self{
             systems: HashMap::new(),
+            overrides: Vec::new()
         }
     }
     /// Add a System to this builder
     fn add<S: System>(&mut self){
-        self.systems.insert(S::ID, Box::new(S::new()));
+        if S::OVERRIDE{
+            self.overrides.push(Box::new(S::new()));
+        }else{
+            self.systems.insert(S::ID, Box::new(S::new()));
+        }
     }
     /// Build the graph
     fn build_run_order_graph(&self) -> Vec<Vec<&'static str>>{
@@ -220,9 +226,9 @@ impl StagesBuilder{
             = Vec::from([
                     self.systems.values()
                                 .map(|system|
-                                    (system.id(), system.run_order())).collect()
+                                        (system.id(), system.run_order())
+                                ).collect()
                 ]);
-
 
         // Essentially iterate until everything is resolved
         for layer_id in 0..{
@@ -287,6 +293,12 @@ impl StagesBuilder{
     }
     /// Build the Stages for Dispatcher to use
     fn build(mut self) -> Vec<Stage>{
+        // Override the systems, as at this point all of them should be registered
+        while let Some(overr) = self.overrides.pop(){
+            if let Some(system) = self.systems.get_mut(overr.id()){
+                *system = overr
+            }
+        }
 
         let mut stages = Vec::new();
 
