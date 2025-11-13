@@ -101,6 +101,8 @@ impl<R: Resource> RequestData for &mut R{
 // Events
 ///////////////////////////////////////////////////////////////////////////////
 
+/// # Event Reader request
+/// An identifier for `EventReader` to make Event queue acquisition for reading events easier
 pub struct ReadEvent<E: Event>(PhantomData<E>);
 
 impl<E: Event> RequestData for ReadEvent<E>{
@@ -111,6 +113,8 @@ impl<E: Event> RequestData for ReadEvent<E>{
     }
 }
 
+/// # Event Writer request
+/// An identifier for `EventWriter` to make Event queue acquisition for reading and sending events easier
 pub struct WriteEvent<E: Event>(PhantomData<E>);
 impl<E: Event> RequestData for WriteEvent<E>{
     type Item<'b> = EventWriter<'b, E>;
@@ -124,7 +128,11 @@ impl<E: Event> RequestData for WriteEvent<E>{
 // Writers
 ///////////////////////////////////////////////////////////////////////////////
 
+/// # Commands request
+/// An identifier for `CommandWriter` to make command queue acquisition easier
 pub struct Commands;
+/// # Triggers request
+/// An identifier for `TriggerWriter` to make trigger queue acquisition easier
 pub struct Triggers;
 
 impl RequestData for Commands{

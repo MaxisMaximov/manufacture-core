@@ -15,10 +15,12 @@ pub type FetchMut<'a, C: Component> = RefMut<'a, C::STORAGE>;
 pub type FetchRes<'a, R: Resource> = Ref<'a, R>;
 pub type FetchResMut<'a, R: Resource> = RefMut<'a, R>;
 
+/// # Event Reader
+/// Lets you read events that have been sent on the previous frame
 pub struct EventReader<'a, E: Event>(pub(super) Ref<'a, Vec<E>>);
 impl<E: Event> EventReader<'_, E>{
     /// Iterate over events sent on the previous frame
-    pub fn read_iter(&self) -> impl Iterator<Item = &E>{
+    pub fn iter(&self) -> impl Iterator<Item = &E>{
         self.0.iter()
     }
     /// Get the number events that were sent on the previous frame
@@ -26,6 +28,8 @@ impl<E: Event> EventReader<'_, E>{
         self.0.len()
     }
 }
+/// # Event Writer
+/// Lets you read events that have been sent on the previous frame, as well as send events for next frame
 pub struct EventWriter<'a, E: Event>{
     pub(super) read: Ref<'a, Vec<E>>,
     pub(super) write: RefMut<'a, Vec<E>>
