@@ -105,11 +105,14 @@ impl EventBufferMap{
         // We have checks for valid ID and a backup Queue, so we can safely unwrap
         let queue = self.read_buffer.get(T::ID).unwrap();
 
-        EventWriter(
-            RefMut::map(
+        EventWriter{
+            read: Ref::map(
+                queue.borrow(), 
+                |x| x.downcast_ref::<T>()),
+            write: RefMut::map(
                 queue.borrow_mut(),
                 |x| x.downcast_mut::<T>())
-            )
+        }
     }
     /// Get a list of events currently in the Read Buffer
     /// 

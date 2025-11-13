@@ -26,24 +26,31 @@ impl<E: Event> EventReader<'_, E>{
         self.0.len()
     }
 }
-pub struct EventWriter<'a, E: Event>(pub(super) RefMut<'a, Vec<E>>);
+pub struct EventWriter<'a, E: Event>{
+    pub(super) read: Ref<'a, Vec<E>>,
+    pub(super) write: RefMut<'a, Vec<E>>
+}
 impl<E: Event> EventWriter<'_, E>{
     /// Iterate over events sent on the current frame
-    /// 
-    /// TODO: Add support for previous frame events
-    pub fn iter(&self) -> impl Iterator<Item = &E>{
-        self.0.iter()
+    pub fn current_iter(&self) -> impl Iterator<Item = &E>{
+        self.write.iter()
+    }
+    /// Iterate over events sent on the previous frame
+    pub fn prev_iter(&self) -> impl Iterator<Item = &E>{
+        self.read.iter()
     }
     /// Get the number of events that are present on the current frame
-    /// 
-    /// TODO: Add support for previous frame events
-    pub fn event_count(&self) -> usize{
-        self.0.len()
+    pub fn current_event_count(&self) -> usize{
+        self.write.len()
+    }
+    /// Get the number events that were sent on the previous frame
+    pub fn prev_event_count(&self) -> usize{
+        self.read.len()
     }
     // The only function exclusive to Writer
     /// Send an event
     pub fn send(&mut self, Event: E){
-        self.0.push(Event);
+        self.write.push(Event);
     }
 }
 
