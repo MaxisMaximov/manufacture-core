@@ -48,6 +48,7 @@ impl Entity{
 /// 
 /// Tokens whose Entities no longer exist are invalid  
 /// This is checked through the Hash value
+#[derive(Clone, Copy)]
 pub struct Token{
     id: usize,
     hash: Hash,
@@ -82,20 +83,28 @@ impl Token{
 /// A safe and easy way to contruct a new Entity in the World
 #[must_use]
 pub struct EntityBuilder<'a>{
-    pub(super) entity: usize,
+    pub(super) entity: Token,
     pub(super) world_ref: &'a mut World,
     pub(super) components: HashSet<&'static str>
 }
 impl<'a> EntityBuilder<'a>{
     /// Add a specified component to the current Entity
     pub fn with<T: Component>(mut self, Comp: T) -> Self{
-        self.world_ref.fetch_mut::<T>().insert(self.entity, Comp);
+        self.world_ref.fetch_mut::<T>().insert(self.entity.id(), Comp);
         self.components.insert(T::ID);
         self
     }
     /// Get the list of components added to the Entity
     pub fn components(&self) -> &HashSet<&'static str>{
         &self.components
+    }
+    /// Get the ID of the entity currently being built
+    pub fn id(&self) -> usize{
+        self.entity.id()
+    }
+    /// Get the Token for the entity currently being built
+    pub fn get_token(&self) -> Token{
+        self.entity
     }
     /// "Finish" the building process
     pub fn finish(self){}
