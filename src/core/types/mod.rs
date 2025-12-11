@@ -39,6 +39,11 @@ impl<C: Component> QueryFilter for Without<C>{
         Fetched.get(Index).is_none()
     }
 }
+
+/// # Entity Prefab trait
+/// A tiny rudimentary trait to make spawning Entities with components easier
+/// 
+/// `spawn` method takes `&self` so that you can send custom data for Prefab to have right away
 pub trait EntityPrefab{
     const ID: &'static str = "idkfa";
     fn spawn(&self, Builder: EntityBuilder<'_>);
