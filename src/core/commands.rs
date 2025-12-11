@@ -1,6 +1,7 @@
 use super::*;
 
 use events::{EntitySpawned, EntityDespawned};
+use types::EntityPrefab;
 
 /// Send a Command to spawn a new Entity
 /// 
@@ -13,6 +14,16 @@ pub struct Spawn;
 impl Command for Spawn{
     fn execute(&mut self, World: &mut World) {
         let token = World.spawn().get_token();
+        World.get_event_writer::<EntitySpawned>().send(EntitySpawned(token));
+    }
+}
+pub struct SpawnPrefab<T: EntityPrefab>(T);
+impl<T: EntityPrefab + 'static> Command for SpawnPrefab<T>{
+    fn execute(&mut self, World: &mut World) {
+        let builder = World.spawn();
+        let token = builder.get_token();
+
+        T::spawn(&self.0, builder);
         World.get_event_writer::<EntitySpawned>().send(EntitySpawned(token));
     }
 }
