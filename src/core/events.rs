@@ -18,6 +18,8 @@ impl Event for EntityDespawned{
 /// 
 /// Announces to the Dispatcher that the app is to be shut down
 /// 
+/// Note: It doesn't shut down immediatelly, the Dispatcher reads the System Level Events only once it has run Postprocessors
+/// 
 /// TODO: Error Codes themselves
 pub struct ExitApp(pub i32);
 impl Event for ExitApp{

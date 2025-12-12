@@ -17,17 +17,17 @@ impl DeltaT{
     pub fn delta_logic(&self) -> u128{
         self.delta_logic
     }
-    /// Set the new Delta Frame value
-    /// 
     /// ## DO NOT USE THIS
     /// Only the Dispatcher is allowed to modify the Delta
+    /// 
+    /// Set the new Delta Frame value
     pub fn set_delta_frame(&mut self, Delta: u128){
         self.delta_frame = Delta
     }
-    /// Set the new Delta Logic value
-    /// 
     /// ## DO NOT USE THIS
     /// Only the Dispatcher is allowed to modify the Delta
+    /// 
+    /// Set the new Delta Logic value
     pub fn set_delta_logic(&mut self, Delta: u128){
         self.delta_logic = Delta
     }
