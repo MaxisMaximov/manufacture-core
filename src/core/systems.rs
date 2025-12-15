@@ -3,6 +3,13 @@ use comp::*;
 use resources::*;
 use events::*;
 use commands::*;
+
+/// # Command Line Input getter
+/// Acquires the current pressed key from the Command Line
+/// 
+/// Note: Some terminals may put `Press` and `Hold` events at the same time
+/// 
+/// TODO: Fix the double input issue
 pub struct CMDInputHandler;
 impl System for CMDInputHandler{
     type Data = &'static mut CMDInput;
