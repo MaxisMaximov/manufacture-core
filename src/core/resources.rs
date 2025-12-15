@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use super::*;
 
 /// # Delta Time Resources
@@ -66,5 +68,37 @@ impl Resource for DeltaT{
             frame: 0,
             logic_frame: 0
         }
+    }
+}
+
+pub use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
+/// # User input -- CMD
+/// Stores the input provided by the Command Line
+/// 
+/// For more see `crossterm`'s `KeyEvent`
+/// 
+/// TODO: Try to remove the triple deref needed
+pub struct CMDInput{
+    key: KeyEvent
+}
+impl Resource for CMDInput{
+    const ID: &'static str = "CMDInputData";
+
+    fn new() -> Self {
+        Self{
+            key: KeyEvent::new(KeyCode::Null, KeyModifiers::NONE),
+        }
+    }
+}
+impl Deref for CMDInput{
+    type Target = KeyEvent;
+
+    fn deref(&self) -> &Self::Target {
+        &self.key
+    }
+}
+impl DerefMut for CMDInput{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.key
     }
 }
