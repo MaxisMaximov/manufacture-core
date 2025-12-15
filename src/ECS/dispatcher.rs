@@ -78,6 +78,8 @@ impl Dispatcher{
 
                 // Update last Logic tick
                 last_tick = Instant::now();
+
+                World.fetch_res_mut::<DeltaT>().incr_logic_frame();
             }
 
             // -- POSTPROCESSORS --
@@ -105,6 +107,8 @@ impl Dispatcher{
 
             // Update last Frame tick
             last_frame = Instant::now();
+
+            World.fetch_res_mut::<DeltaT>().incr_frame();
         }
     }
 }

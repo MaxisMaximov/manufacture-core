@@ -19,9 +19,11 @@ impl DeltaT{
     pub fn delta_logic(&self) -> u128{
         self.delta_logic
     }
+    /// Get the number of frames elapsed since the app started
     pub fn frame(&self) -> u64{
         self.frame
     }
+    /// Get the number of logic loops that were ran since the app started
     pub fn logic_frame(&self) -> u64{
         self.logic_frame
     }
@@ -39,9 +41,17 @@ impl DeltaT{
     pub fn set_delta_logic(&mut self, Delta: u128){
         self.delta_logic = Delta
     }
+    /// ## DO NOT USE THIS
+    /// Only the Dispatcher is allowed to increment Frame count
+    /// 
+    /// Increment Staller loop count
     pub fn incr_frame(&mut self){
         self.frame += 1
     }
+    /// ## DO NOT USE THIS
+    /// Only the Dispatcher is allowed to increment Frame count
+    /// 
+    /// Increment Logic loop count
     pub fn incr_logic_frame(&mut self){
         self.logic_frame += 1
     }
