@@ -5,7 +5,7 @@ use super::storage::Storage;
 /// 
 /// `Storage` is anything implementing `Storage` trait
 /// 
-/// `ID` is what the component will be identified by in the World
+/// `ID` is what the Component will be identified by in the World
 /// 
 /// ## WARNING
 /// Make sure your Component ID does not collide with other IDs from other plugins

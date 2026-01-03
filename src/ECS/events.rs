@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use super::fetch::{EventReader, EventWriter};
 
 /// # Event trait
-/// Defines an event that systems can send and receive
+/// Defines an Event that Systems can send and receive
 /// 
 /// ## WARNING
 /// Make sure the Event ID does not collide with Events from other plugins
@@ -46,10 +46,10 @@ impl EventBufferMap{
         }
     }
 
-    /// Register an event
+    /// Register an Event
     pub fn register<T: Event>(&mut self){
         if self.registry.contains(T::ID){
-            // Events CANNOT share IDs because systems expect a specific type
+            // Events CANNOT share IDs because Systems expect a specific type
             // This ain't OOP, we can't replace one struct with another and expect it to go the same
             panic!("ERROR: Conflicting Event IDs: {}", T::ID)
         }
@@ -57,7 +57,7 @@ impl EventBufferMap{
         self.read_buffer.insert(T::ID, RefCell::new(Box::new(Vec::<T>::new())));
         self.write_buffer.insert(T::ID, RefCell::new(Box::new(Vec::<T>::new())));
     }
-    /// Deregister an event
+    /// Deregister an Event
     /// 
     /// This also clears the respective Event's Queues from both buffers
     pub fn deregister<T: Event>(&mut self){
@@ -81,7 +81,7 @@ impl EventBufferMap{
     pub fn get_reader<'a, T: Event + 'static>(&'a self) -> EventReader<'a, T>{
         // Check if the Event is valid
         if !self.registry.contains(T::ID){
-            panic!("ERROR: Attempted to fetch unregistered event: {}", T::ID)
+            panic!("ERROR: Attempted to fetch unregistered Event: {}", T::ID)
         }
 
         // We have checks for valid ID and a backup Queue, so we can safely unwrap
@@ -99,7 +99,7 @@ impl EventBufferMap{
     pub fn get_writer<'a, T: Event + 'static>(&'a self) -> EventWriter<'a, T>{
         // Check if the Event is valid
         if !self.registry.contains(T::ID){
-            panic!("ERROR: Attempted to fetch unregistered event: {}", T::ID)
+            panic!("ERROR: Attempted to fetch unregistered Event: {}", T::ID)
         }
 
         // We have checks for valid ID and a backup Queue, so we can safely unwrap
@@ -148,11 +148,11 @@ impl<E: Event> EventQueue for Vec<E>{
     }
 }
 impl dyn EventQueue{
-    /// Downcast to a reference of an event `T` queue
+    /// Downcast to a reference of an Event `T` queue
     fn downcast_ref<T: Event>(&self) -> &Vec<T>{
         unsafe{&*(self as *const dyn EventQueue as *const Vec<T>)}
     }
-    /// Downcast to a mutable reference of an event `T` queue
+    /// Downcast to a mutable reference of an Event `T` queue
     fn downcast_mut<T: Event>(&mut self) -> &mut Vec<T>{
         unsafe{&mut *(self as *mut dyn EventQueue as *mut Vec<T>)}
     }

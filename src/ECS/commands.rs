@@ -3,8 +3,8 @@ use super::world::World;
 /// # Command trait
 /// Defines a command that does an operation on the whole World
 /// 
-/// Typically used to add/remove components from entities, 
-/// spawn/despawn entities, register new resources/components etc.
+/// Typically used to add/remove Components from entities, 
+/// spawn/despawn entities, register new resources/Components etc.
 /// 
 /// ID is completely optional for debug purposes
 pub trait Command: 'static{

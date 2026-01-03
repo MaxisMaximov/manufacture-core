@@ -46,12 +46,12 @@ impl World{
     // Fetches
     ///////////////////////////////////////////////////////////////////////////////
 
-    /// Get a reference to `T` component storage
+    /// Get a reference to `T` Component storage
     pub fn fetch<'a, T>(&'a self) -> Fetch<'a, T> where T: Component{
-        // Check if we have such component in the first place
+        // Check if we have such Component in the first place
         if !self.components.contains_key(T::ID){
-            // There's no way to signify missing components yet, so we panic for now
-            panic!("ERROR: Tried to fetch an unregistered component: {}", T::ID)
+            // There's no way to signify missing Components yet, so we panic for now
+            panic!("ERROR: Tried to fetch an unregistered Component: {}", T::ID)
         }
 
         Ref::map(
@@ -59,11 +59,11 @@ impl World{
             self.components.get(T::ID).unwrap().borrow(), 
             |idkfa| &**idkfa.downcast_ref::<T>().unwrap())
     }
-    /// Get a mutable reference to `T` component storage
+    /// Get a mutable reference to `T` Component storage
     pub fn fetch_mut<'a, T>(&'a self) -> FetchMut<'a, T> where T: Component{
         // Same as above
         if !self.components.contains_key(T::ID){
-            panic!("ERROR: Tried to fetch an unregistered component: {}", T::ID)
+            panic!("ERROR: Tried to fetch an unregistered Component: {}", T::ID)
         }
 
         RefMut::map(
@@ -95,13 +95,13 @@ impl World{
             |idkfa| idkfa.downcast_mut::<T>().unwrap())
     }
 
-    /// Get a reader for `T` event
+    /// Get a reader for `T` Event
     /// 
     /// The reader accesses the events sent in the previous frame
     pub fn get_event_reader<'a, T>(&'a self) -> EventReader<'a, T> where T: Event{
         self.events.get_reader()
     }
-    /// Get a writer for `T` event
+    /// Get a writer for `T` Event
     /// 
     /// The writer sends events for the current frame
     pub fn get_event_writer<'a, T>(&'a self) -> EventWriter<'a, T> where T: Event{
@@ -123,19 +123,19 @@ impl World{
     // Register
     ///////////////////////////////////////////////////////////////////////////////
 
-    /// Register `T` component in this World
+    /// Register `T` Component in this World
     pub fn register_comp<T>(&mut self) where T: Component{
         if self.components.contains_key(T::ID){
-            panic!("ERROR: Attempted to override an existing component: {}", T::ID)
+            panic!("ERROR: Attempted to override an existing Component: {}", T::ID)
         }
 
         self.components.insert(
             T::ID, 
             RefCell::new(Box::new(StorageContainer::<T>::new())));
     }
-    /// Remove the `T` component from this World
+    /// Remove the `T` Component from this World
     /// 
-    /// Every Entity with this component will have that component dropped
+    /// Every Entity with this Component will have that Component dropped
     pub fn deregister_comp<T>(&mut self) where T: Component{
         self.components.remove(T::ID);
     }
@@ -153,11 +153,11 @@ impl World{
         self.resources.remove(T::ID);
     }
 
-    /// Register a `T` event in this World
+    /// Register a `T` Event in this World
     pub fn register_event<T>(&mut self) where T: Event{
         self.events.register::<T>();
     }
-    /// Remove the `T` event from this world
+    /// Remove the `T` Event from this World
     /// 
     /// The respective Read and Write queues will get removed from EventMap
     pub fn deregister_event<T>(&mut self) where T: Event{
@@ -186,7 +186,7 @@ impl World{
     /// 
     /// Returns `true` if the entity was found and removed, otherwise `false`
     /// 
-    /// This drops all of the Entity's components from all Storages
+    /// This drops all of the Entity's Components from all Storages
     pub fn despawn(&mut self, Id: usize) -> bool{
         if self.entities.remove(&Id).is_some(){
             for storage in self.components.values_mut(){
@@ -198,7 +198,7 @@ impl World{
     }
     /// Despawn the given Entity via Token
     /// 
-    /// This drops all of the Entity's components from all Storages
+    /// This drops all of the Entity's Components from all Storages
     /// 
     /// Returns `true` if the entity was found and removed, otherwise `false`
     /// 

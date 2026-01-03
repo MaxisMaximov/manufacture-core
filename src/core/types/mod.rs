@@ -8,10 +8,10 @@ mod vector;
 pub use vector::*;
 
 /// # Query Filter: With
-/// Only allows Entities that have the specified component to pass through
+/// Only allows Entities that have the specified Component to pass through
 /// 
-/// There is no need to include it in the filters if you fetch the component,  
-/// Query automatically checks whether the requested components exist for an Entity
+/// There is no need to include it in the filters if you fetch the Component,  
+/// Query automatically checks whether the requested Components exist for an Entity
 pub struct With<C: Component>(PhantomData<C>);
 impl<C: Component> QueryFilter for With<C>{
     type Item<'b> = Fetch<'b, C>;
@@ -26,7 +26,7 @@ impl<C: Component> QueryFilter for With<C>{
 }
 
 /// # Query Filter: Without
-/// Only allows Entities without the specified component to pass through
+/// Only allows Entities without the specified Component to pass through
 pub struct Without<C: Component>(PhantomData<C>);
 impl<C: Component> QueryFilter for Without<C>{
     type Item<'b> = Fetch<'b, C>;
@@ -41,7 +41,7 @@ impl<C: Component> QueryFilter for Without<C>{
 }
 
 /// # Entity Prefab trait
-/// A tiny rudimentary trait to make spawning Entities with components easier
+/// A tiny rudimentary trait to make spawning Entities with Components easier
 /// 
 /// `spawn` method takes `&self` so that you can send custom data for Prefab to have right away
 pub trait EntityPrefab{

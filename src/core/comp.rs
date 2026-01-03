@@ -4,7 +4,7 @@ use super::*;
 use crate::core::storage::*;
 use super::types::{Vector2, Vector3};
 
-/// 2D Transform component
+/// 2D Transform Component
 /// 
 /// Holds XY position, head-on rotation in Radians and XY scale
 pub struct Transform2D{
@@ -18,7 +18,7 @@ impl Component for Transform2D{
     const ID: &'static str = "Transform2D";
 }
 
-/// 3D Transform component
+/// 3D Transform Component
 /// 
 /// Holds position in all 3 axis, XYZ Euler rotation in Radians and scale in all 3 axis
 /// 

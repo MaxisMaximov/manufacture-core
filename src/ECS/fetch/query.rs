@@ -20,7 +20,7 @@ use super::{Fetch, FetchMut};
 /// `AccItem` is what gets returned when getting data immutably
 /// 
 /// `MutAccItem` is what gets returned when getting data mutably.  
-/// Read-only components simply return their `AccItem` when getting mutably, such as `&Component`
+/// Read-only Components simply return their `AccItem` when getting mutably, such as `&Component`
 pub trait QueryData{
     type Item<'b>;
     type AccItem<'b>;
@@ -35,7 +35,7 @@ pub trait QueryData{
 }
 
 /// # Query Filter trait
-/// Required for Query to filter out entities with matching components.  
+/// Required for Query to filter out entities with matching Components.  
 /// 
 /// It is essentially a miniature System that checks whether an Entity meets  
 /// the requirements for the main System to proceed
@@ -61,10 +61,10 @@ pub trait QueryFilter{
 /// You can specify filters for the Query to use when getting Entities, such as `With` and `Without`.  
 /// Any type implementing `QueryFilter` can be used
 /// 
-/// To get a specific Entity's set of components, use `get`, `get_mut`, and their Token variations.  
+/// To get a specific Entity's set of Components, use `get`, `get_mut`, and their Token variations.  
 /// Token variations of getters are preferred over normal getters
 /// 
-/// To iterate over all entities with all queried components, use `iter` and `iter_mut`
+/// To iterate over all entities with all queried Components, use `iter` and `iter_mut`
 /// 
 /// To access the underlying Storages directly, use a dereference `*`.  
 /// Note that Filters will not apply if you do this
@@ -86,12 +86,12 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
         }
     }
 
-    /// Get a set of components for a given entity
+    /// Get a set of Components for a given entity
     /// 
-    /// It is generally discouraged to get components this way if you're looking for a specific Entity  
+    /// It is generally discouraged to get Components this way if you're looking for a specific Entity  
     /// If you can, use `get_from_token` instead
     /// 
-    /// Note that it returns `Some` only if the entity has *all* requested components,  
+    /// Note that it returns `Some` only if the entity has *all* requested Components,  
     /// otherwise it returns `None`
     pub fn get(&'a self, Index: &usize) -> Option<D::AccItem<'a>>{
         if self.entities.contains_key(Index) && F::filter(&self.filter_data, Index){
@@ -100,10 +100,10 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
             None
         }
     }
-    /// Get a set of components for the Entity tracked by the Token.  
+    /// Get a set of Components for the Entity tracked by the Token.  
     /// It automatically validates the given Token as well
     /// 
-    /// Note that it returns `Some` only if the entity has *all* requested components,  
+    /// Note that it returns `Some` only if the entity has *all* requested Components,  
     /// otherwise it returns `None`
     pub fn get_from_token(&'a self, Token: &mut entity::Token) -> Option<D::AccItem<'a>>{
         // We only accept valid Tokens
@@ -115,12 +115,12 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
 
     }
 
-    /// Get a mutable set of components for a given entity
+    /// Get a mutable set of Components for a given entity
     /// 
-    /// It is generally discouraged to get components this way if you're looking for a specific Entity.  
+    /// It is generally discouraged to get Components this way if you're looking for a specific Entity.  
     /// If you can, use `get_from_token_mut` instead
     /// 
-    /// Note that it returns `Some` only if the entity has *all* requested components,  
+    /// Note that it returns `Some` only if the entity has *all* requested Components,  
     /// otherwise it returns `None`
     pub fn get_mut(&'a mut self, Index: &usize) -> Option<D::MutAccItem<'a>>{
         if !self.entities.contains_key(Index){
@@ -131,10 +131,10 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
         }
         D::get_mut(&mut self.data, Index)
     }
-    /// Get a mutable set of components for the Entity tracked by the Token.  
+    /// Get a mutable set of Components for the Entity tracked by the Token.  
     /// It automatically validates the given Token as well
     /// 
-    /// Note that it returns `Some` only if the entity has *all* requested components,  
+    /// Note that it returns `Some` only if the entity has *all* requested Components,  
     /// otherwise it returns `None`
     pub fn get_from_token_mut(&'a mut self, Token: &mut entity::Token) -> Option<D::MutAccItem<'a>>{
         // We only accept valid Tokens
@@ -147,7 +147,7 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
 
     /// Iterate over all matching entities immutably  
     /// 
-    /// Entities that don't have at least one matching component will not be iterated over
+    /// Entities that don't have at least one matching Component will not be iterated over
     pub fn iter(&'a self) -> Iter<'a, D, F>{
         Iter{
             data: &self.data,
@@ -157,7 +157,7 @@ impl<'a, D: QueryData, F: QueryFilter> WorldQuery<'a, D, F>{
     }
     /// Iterate over all matching entities mutably  
     /// 
-    /// Entities that don't have at least one matching component will not be iterated over
+    /// Entities that don't have at least one matching Component will not be iterated over
     pub fn iter_mut(&'a mut self) -> IterMut<'a, D, F>{
         IterMut{
             data: &mut self.data,
@@ -197,7 +197,7 @@ impl<'a, D: QueryData, F: QueryFilter> DerefMut for WorldQuery<'a, D, F>{
 
 use std::collections::btree_map::Keys;
 /// # Query Iterator
-/// Iterates over entities that have all matching components of `D`ata immutably
+/// Iterates over entities that have all matching Components of `D`ata immutably
 pub struct Iter<'a, D: QueryData, F: QueryFilter>{
     data: &'a D::Item<'a>,
     filters: &'a F::Item<'a>,
@@ -221,7 +221,7 @@ impl<'a, D: QueryData, F: QueryFilter> Iterator for Iter<'a, D, F>{
 }
 
 /// # Mutable Query Iterator
-/// Iterates over entities that have all matching components of `D`ata mutably
+/// Iterates over entities that have all matching Components of `D`ata mutably
 pub struct IterMut<'a, D: QueryData, F: QueryFilter>{
     data: &'a mut D::Item<'a>,
     filters: &'a F::Item<'a>,
@@ -317,7 +317,7 @@ impl<C: Component> QueryData for Option<&C>{
     fn get<'a>(Fetched: &'a Self::Item<'a>, Index: &usize) -> Option<Self::AccItem<'a>> {
         // Why is it wrapped in `Some`:
         // `Option` signifies an optional Component, so the return type is `Option`
-        // The systems handle the `Option`s themselves
+        // The Systems handle the `Option`s themselves
         //
         // But we can't just use `get` like with normal Component references
         // `Some` essentially ensures the Getter functions always return  

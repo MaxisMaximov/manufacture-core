@@ -5,9 +5,9 @@ use types::EntityPrefab;
 
 /// Send a Command to spawn a new Entity
 /// 
-/// Creates a new entity and sends an event with the Entity's Token
+/// Creates a new entity and sends an Event with the Entity's Token for Systems to use
 /// 
-/// Note: This creates a new Entity *without any Components*, you will have to add those later yourself. If you wish to create an Entity with predefined components, use `SpawnPrefab`
+/// Note: This creates a new Entity **without any Components**, you will have to add those later yourself. If you wish to create an Entity with predefined Components, use `SpawnPrefab` along with `Prefab` trait from `types`
 pub struct Spawn;
 impl Command for Spawn{
     fn execute(&mut self, World: &mut World) {
@@ -18,7 +18,7 @@ impl Command for Spawn{
 
 /// Send a Command to spawn a new Entity with Components
 /// 
-/// Creates a new Entity using the Prefab's instructions and sends an event with the Entity's Token
+/// Creates a new Entity using the Prefab's instructions and sends an Event with the Entity's Token
 pub struct SpawnPrefab<T: EntityPrefab>(T);
 impl<T: EntityPrefab + 'static> Command for SpawnPrefab<T>{
     fn execute(&mut self, World: &mut World) {

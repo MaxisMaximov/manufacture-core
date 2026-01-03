@@ -3,11 +3,11 @@ use std::collections::{BTreeMap, HashMap};
 use super::*;
 
 /// # Vec Storage
-/// The simplest component storage possible
+/// The simplest Component storage possible
 /// 
 /// Uses a single Vec under the hood and iterates over it for operations
 /// 
-/// It's generally recommended to use it only when a given component has *very* little use
+/// It's generally recommended to use it only when a given Component has *very* little use
 pub struct VecStorage<C: Component>{
     inner: Vec<(usize, C)>
 }
@@ -41,7 +41,7 @@ impl<C: Component> Storage<C> for VecStorage<C>{
 /// 
 /// Essentially a wrapper over a HashMap
 /// 
-/// It's generally recommended to use it for components that are sparsely used across entities
+/// It's generally recommended to use it for Components that are sparsely used across entities
 pub struct HashMapStorage<C: Component>{
     inner: HashMap<usize, C>
 }
@@ -71,7 +71,7 @@ impl<C: Component> Storage<C> for HashMapStorage<C>{
 /// 
 /// Essentially a wrapper over BTreeMap
 /// 
-/// It's generally recommended to use this for components that will be on nearly all entities
+/// It's generally recommended to use this for Components that will be on nearly all entities
 pub struct BTreeMapStorage<C: Component>{
     inner: BTreeMap<usize, C>
 }
@@ -102,7 +102,7 @@ impl<C: Component> Storage<C> for BTreeMapStorage<C>{
 /// 
 /// Best of HashMap and Vec Storages, with the density of Vec and fast access time of HashMap
 /// 
-/// It's generally recommended to use this for sparsely populated, but heavy components
+/// It's generally recommended to use this for sparsely populated, but heavy Components
 pub struct DenseVecStorage<C: Component>{
     proxy: HashMap<usize, usize>,
     inner: Vec<(usize, C)>

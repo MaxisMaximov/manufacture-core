@@ -11,7 +11,7 @@ use super::{EventReader, EventWriter};
 use super::{CommandWriter, TriggerWriter};
 
 /// # Request fetch trait
-/// Required for `Request` to know what system resources to fetch from the World
+/// Required for `Request` to know what System resources to fetch from the World
 /// 
 /// It is implemented by default on `&` and `&mut` Resource references, 
 /// Event Readers and Writers, the Command and Trigger Writers, as well as Tuples up to 4 elements
@@ -24,7 +24,7 @@ pub trait RequestData{
 }
 
 /// # System resource Request
-/// Struct that requests desired system resources from the World  
+/// Struct that requests desired System resources from the World  
 /// Such as Resources, Event Readers/Writers and Trigger and Command Writers
 pub struct Request<'a, D: RequestData>{
     data: D::Item<'a>
@@ -49,7 +49,7 @@ impl<'a, D: RequestData> DerefMut for Request<'a, D>{
     }
 }
 
-/// # Query request
+/// # Query Request
 /// An identifier for `WorldQuery` to make data acquisition easier
 /// 
 /// **Below documentation for `WorldQuery`**
@@ -59,10 +59,10 @@ impl<'a, D: RequestData> DerefMut for Request<'a, D>{
 /// You can specify filters for the Query to use when getting Entities, such as `With` and `Without`.  
 /// Any type implementing `QueryFilter` can be used
 /// 
-/// To get a specific Entity's set of components, use `get`, `get_mut`, and their Token variations.  
+/// To get a specific Entity's set of Components, use `get`, `get_mut`, and their Token variations.  
 /// Token variations of getters are preferred over normal getters
 /// 
-/// To iterate over all entities with all queried components, use `iter` and `iter_mut`
+/// To iterate over all entities with all queried Components, use `iter` and `iter_mut`
 /// 
 /// To access the underlying Storages directly, use a dereference `*`.  
 /// Note that Filters will not apply if you do this
@@ -101,7 +101,7 @@ impl<R: Resource> RequestData for &mut R{
 // Events
 ///////////////////////////////////////////////////////////////////////////////
 
-/// # Event Reader request
+/// # Event Reader Request
 /// An identifier for `EventReader` to make Event queue acquisition for reading events easier
 pub struct ReadEvent<E: Event>(PhantomData<E>);
 
@@ -113,7 +113,7 @@ impl<E: Event> RequestData for ReadEvent<E>{
     }
 }
 
-/// # Event Writer request
+/// # Event Writer Request
 /// An identifier for `EventWriter` to make Event queue acquisition for reading and sending events easier
 pub struct WriteEvent<E: Event>(PhantomData<E>);
 impl<E: Event> RequestData for WriteEvent<E>{
@@ -128,10 +128,10 @@ impl<E: Event> RequestData for WriteEvent<E>{
 // Writers
 ///////////////////////////////////////////////////////////////////////////////
 
-/// # Commands request
+/// # Commands Request
 /// An identifier for `CommandWriter` to make command queue acquisition easier
 pub struct Commands;
-/// # Triggers request
+/// # Triggers Request
 /// An identifier for `TriggerWriter` to make trigger queue acquisition easier
 pub struct Triggers;
 

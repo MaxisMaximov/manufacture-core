@@ -36,7 +36,7 @@ impl Dispatcher{
     pub fn new() -> DispatcherBuilder{
         DispatcherBuilder::new()
     }
-    /// Dispatch the systems
+    /// Dispatch the Systems
     pub fn dispatch(&mut self, World: &mut World){
         
         let mut last_frame = Instant::now();
@@ -58,7 +58,7 @@ impl Dispatcher{
                 // Update Logic Delta
                 World.fetch_res_mut::<DeltaT>().set_delta_logic(last_tick.elapsed().as_millis());
 
-                // -- Logic systems --
+                // -- Logic Systems --
                 for stage in self.logic.iter_mut(){
                     for system in stage.iter_mut(){
                         system.execute(World);
@@ -79,7 +79,7 @@ impl Dispatcher{
                     command.execute(World);
                 }
 
-                // Update last Logic tick
+                // Update last Logic Tick
                 last_tick = Instant::now();
 
                 World.fetch_res_mut::<DeltaT>().incr_logic_frame();
@@ -108,7 +108,7 @@ impl Dispatcher{
             // Clear Events
             World.swap_event_buffers();
 
-            // Update last Frame tick
+            // Update last Frame Tick
             last_frame = Instant::now();
 
             World.fetch_res_mut::<DeltaT>().incr_frame();
@@ -141,11 +141,11 @@ impl DispatcherBuilder{
             postproc: StagesBuilder::new(),            
         }
     }
-    /// Add a system to the Dispatcher
+    /// Add a System to the Dispatcher
     pub fn add<S: System>(&mut self){
-        // The system has the same ID but is not an override, we can't have it here
+        // The System has the same ID but is not an override, we can't have it here
         if self.registry.contains_key(S::ID) && !S::OVERRIDE{
-            panic!("ERROR: Conflicting system IDs {}\nDid you mean to override the system?", S::ID)
+            panic!("ERROR: Conflicting system IDs {}\nDid you mean to override the System?", S::ID)
         }
         // Also acts as an auto override for the registry, neat
         self.registry.insert(S::ID, SystemInfo::new::<S>());
@@ -162,12 +162,12 @@ impl DispatcherBuilder{
             SystemType::Postprocessor => self.postproc.add::<S>(),
         }
     }
-    /// Verify dependencies of each system
+    /// Verify dependencies of each System
     fn verify_deps(&self){
         for system in self.registry.values(){
             for dep in system.depends.iter(){
                 if !self.registry.contains_key(dep){
-                    panic!("ERROR: System {}'s dependency system {} does not exist", system.id, dep)
+                    panic!("ERROR: System {}'s dependency System {} does not exist", system.id, dep)
                 }
             }
         }
@@ -254,19 +254,19 @@ impl StagesBuilder{
             // If there were none, we would break out of the loop
             let layer = graph.get(layer_id).unwrap();
 
-            // Iterate over layer's systems to see which we should shift
+            // Iterate over layer's Systems to see which we should shift
             for (system_id, order_deps) in layer.iter(){
                 
                 for order_dep in order_deps.iter(){
 
                     match order_dep{
-                        // If we need this system to run before, we shift the other system to later
+                        // If we need this System to run before, we shift the other System to later
                         RunOrder::Before(id) => {
                             if layer.contains_key(id){
                                 shifts.insert(*id);
                             }
                         },
-                        // Equivalent of the other system having `Before(this_system)`
+                        // Equivalent of the other System having `Before(this_system)`
                         // So we shift *this* one to later instead
                         RunOrder::After(id) => {
                             if layer.contains_key(id){
@@ -282,12 +282,12 @@ impl StagesBuilder{
                 break;
             }
 
-            // This should not happen unless there's a circular dependency between the systems
+            // This should not happen unless there's a circular dependency between the Systems
             if shifts.len() == layer.len(){
-                panic!("ERROR: There are circular run orders between {} systems:\n{:#?}\nPlease resolve them", layer.len(), layer.keys())
+                panic!("ERROR: There are circular run orders between {} Systems:\n{:#?}\nPlease resolve them", layer.len(), layer.keys())
             }
 
-            // Push a new layer and move all the shifted systems from current layer to next layer
+            // Push a new layer and move all the shifted Systems from current layer to next layer
             graph.push(HashMap::new());
             
             for system_id in shifts.drain(){ // Clear the shifts while we're at it
@@ -355,23 +355,32 @@ impl RunOrder{
 /// # System Type
 /// Specifies where the System should be within the Execution Loop  
 /// 
-/// Systems work within 2 loops: Staller and Logic  
-/// Staller systems are ran every frame, Logic systems are ran at most N times per second, specified by the Tickrate
+/// Systems work within 2 loops:
+/// 1. Staller
+///     - Preprocessors
+///      2. Logic
+///         - Logic
+///         - Singlefires
+///         - Event Responders
+///         - Commands
+///     - Postprocessors
+/// 
+/// Staller Systems are ran every frame, Logic Systems are ran *at most* `N` times per second, specified by the Tickrate
 /// 
 /// `Preprocessor` Systems are ran at the beggining of every frame  
 /// They are typically used to update Resources
 /// 
-/// `Logic` Systems are the main Update systems that run the game logic, this is the default type
+/// `Logic` Systems are the main Update Systems that run the game logic, this is the default System type
 /// 
-/// `Singlefire` Systems are ran at the will of other systems  
-/// To execute a system like this, another system needs to send a Trigger it through TriggerWriter  
-/// You cannot daisy-chain Singlefires, any Singlefires triggered by current tick Singlefires will be executed on the next tick
+/// `Singlefire` Systems are ran at the will of other Systems  
+/// To execute a System like this, another System needs to send a Trigger it through TriggerWriter  
+/// You cannot daisy-chain Singlefires within same Tick, any Singlefires triggered by current Tick Singlefires will only be executed on the next Tick
 /// 
 /// `EventResponder` Systems are ran when their respective Event is present within the Read Buffer, signified by the ID  
-/// They're effectively Logic Systems that listen for Events only
+/// They're effectively Logic Systems that listen for Events only and declutter the main Logic loop
 /// 
 /// `Postprocessor` Systems are ran at the end of every frame  
-/// They are typically output Systems like Audio and Rendering
+/// They are typically output Systems like Audio, Outgoing Netowkr and Rendering
 #[derive(Default)]
 pub enum SystemType{
     Preprocessor,

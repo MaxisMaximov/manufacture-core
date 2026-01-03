@@ -7,7 +7,7 @@ use super::entity::Token;
 /// # Component Storage trait
 /// Specifies some basic functions for the storage to do
 pub trait Storage<T: Component>{
-    /// Create a new specified Storage for this component
+    /// Create a new specified Storage for this Component
     fn new() -> Self;
 
     /// Insert a Component for the specified Entity into this Storage
@@ -60,7 +60,7 @@ pub trait Storage<T: Component>{
 }
 
 /// # Storage trait Container
-/// Wraps a Component's `STORAGE` to safely store it within the world
+/// Wraps a Component's `STORAGE` to safely store it within the World
 /// 
 /// It is required as compound generics *(`U: Trait_A, T: Trait<U>`)* aren't supported yet
 /// 
@@ -96,10 +96,10 @@ impl<T: Component> DerefMut for StorageContainer<T>{
 /// # Storage Container Wrapper trait
 /// A dyn-compatible wrapper for StorageContainer for the World to store with
 /// 
-/// Provides ability to remove a component of the specified entity for easier cleanup,  
+/// Provides ability to remove a Component of the specified entity for easier cleanup,  
 /// as well as Downcast methods to get the underlying Containers
 pub trait StorageWrapper{
-    /// Remove a specified Entity's component from this storage
+    /// Remove a specified Entity's Component from this storage
     fn remove(&mut self, Index: usize);
     /// Get the underlying Container's Component ID
     fn comp_id(&self) -> &'static str;
@@ -116,9 +116,9 @@ impl<T: Component> StorageWrapper for StorageContainer<T>{
 }
 
 impl dyn StorageWrapper{
-    /// Downcast to a reference of a StorageContainer of the `T` component type
+    /// Downcast to a reference of a StorageContainer of the `T` Component type
     /// 
-    /// Returns None if the ID of the `T` component does not match the underlying Container's Component ID
+    /// Returns None if the ID of the `T` Component does not match the underlying Container's Component ID
     pub fn downcast_ref<T: Component>(&self) -> Option<&StorageContainer<T>>{
         if T::ID == self.comp_id(){
             // SAFETY: We check if the Component IDs match on the line above
@@ -130,9 +130,9 @@ impl dyn StorageWrapper{
         }
     }
 
-    /// Downcast to a mutable reference of a StorageContainer of the `T` component type
+    /// Downcast to a mutable reference of a StorageContainer of the `T` Component type
     /// 
-    /// Returns None if the ID of the `T` component does not match the underlying Container's Component ID
+    /// Returns None if the ID of the `T` Component does not match the underlying Container's Component ID
     pub fn downcast_mut<T: Component>(&mut self) -> Option<&mut StorageContainer<T>>{
         if T::ID == self.comp_id(){
             Some(unsafe {

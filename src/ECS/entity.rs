@@ -10,7 +10,7 @@ type Hash = u32;
 /// Identifies a single Entity within the World
 /// 
 /// Stores it's own ID and Hash for collision checks, 
-/// as well as what components it has on the given frame
+/// as well as what Components it has on the given frame
 pub struct Entity{
     id: usize,
     hash: Hash
@@ -42,7 +42,7 @@ impl Entity{
 }
 
 /// # Entity Token
-/// A "reference" to a specific Entity within the world
+/// A "reference" to a specific Entity within the World
 /// 
 /// Holds the Entity's ID, Hash, and whether it's a valid Token
 /// 
@@ -88,13 +88,13 @@ pub struct EntityBuilder<'a>{
     pub(super) components: HashSet<&'static str>
 }
 impl<'a> EntityBuilder<'a>{
-    /// Add a specified component to the current Entity
+    /// Add a specified Component to the current Entity
     pub fn with<T: Component>(mut self, Comp: T) -> Self{
         self.world_ref.fetch_mut::<T>().insert(self.entity.id(), Comp);
         self.components.insert(T::ID);
         self
     }
-    /// Get the list of components added to the Entity
+    /// Get the list of Components added to the Entity
     pub fn components(&self) -> &HashSet<&'static str>{
         &self.components
     }

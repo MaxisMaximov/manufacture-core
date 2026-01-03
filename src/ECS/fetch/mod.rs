@@ -52,7 +52,7 @@ impl<E: Event> EventWriter<'_, E>{
         self.read.len()
     }
     // The only function exclusive to Writer
-    /// Send an event
+    /// Send an Event
     pub fn send(&mut self, Event: E){
         self.write.push(Event);
     }
