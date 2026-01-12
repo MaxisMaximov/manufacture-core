@@ -36,7 +36,26 @@ impl Component for Transform3D{
 
 /// Holds tags for a given Entity
 pub struct Tags{
-    pub inner: HashSet<&'static str>
+    inner: HashSet<&'static str>
+}
+impl Tags{
+    pub fn new() -> Self{
+        Self{
+            inner: HashSet::new(),
+        }
+    }
+    /// Check if this Entity has a given tag
+    pub fn has(&self, tag: &'static str) -> bool{
+        self.inner.contains(tag)
+    }
+    /// Tag this entity with a tag
+    pub fn tag(&mut self, tag: &'static str){
+        self.inner.insert(tag);
+    }
+    /// Remove the given tag from the Entity
+    pub fn untag(&mut self, tag: &'static str){
+        self.inner.remove(tag);
+    }
 }
 impl Component for Tags{
     type STORAGE = HashMapStorage<Self>;
