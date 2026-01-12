@@ -45,15 +45,33 @@ impl Tags{
         }
     }
     /// Check if this Entity has a given tag
-    pub fn has(&self, tag: &'static str) -> bool{
+    pub fn has<T: Tag>(&self) -> bool{
+        self.inner.contains(T::ID)
+    }
+    /// Check if this Entity has a given tag via it's ID
+    /// 
+    /// Note: Because this method takes a tag ID it may not line up with the tag from another plugin you're using
+    pub fn has_id(&self, tag: &'static str) -> bool{
         self.inner.contains(tag)
     }
     /// Tag this entity with a tag
-    pub fn tag(&mut self, tag: &'static str){
+    pub fn tag<T: Tag>(&mut self){
+        self.inner.insert(T::ID);
+    }
+    /// Tag this entity with a tag
+    /// 
+    /// Note: Because this method takes a tag ID it may not line up with the tag from another plugin you're using
+    pub fn tag_id(&mut self, tag: &'static str){
         self.inner.insert(tag);
     }
     /// Remove the given tag from the Entity
-    pub fn untag(&mut self, tag: &'static str){
+    pub fn untag<T: Tag>(&mut self){
+        self.inner.remove(T::ID);
+    }
+    /// Remove the given tag from the Entity
+    /// 
+    /// Note: Because this method takes a tag ID it may not line up with the tag from another plugin you're using
+    pub fn untag_id(&mut self, tag: &'static str){
         self.inner.remove(tag);
     }
 }
@@ -61,6 +79,12 @@ impl Component for Tags{
     type STORAGE = HashMapStorage<Self>;
 
     const ID: &'static str = "Tags";
+}
+/// Tag trait
+/// 
+/// Rudimentary trait for ease of use of `Tags` component
+pub trait Tag{
+    const ID: &'static str;
 }
 
 /// A Command-Line sprite
