@@ -1,5 +1,5 @@
-use crate::ECS::dispatcher::DispatcherBuilder;
-use crate::ECS::prelude::*;
+use manufacture_engine::ECS::dispatcher::DispatcherBuilder;
+use manufacture_engine::ECS::prelude::*;
 
 pub mod commands;
 pub mod comp;
