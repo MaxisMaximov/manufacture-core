@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::*;
-use crate::core::storage::*;
+use super::storage::*;
 use super::types::{Vector2, Vector3};
 
 /// 2D Transform Component

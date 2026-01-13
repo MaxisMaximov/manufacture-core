@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
 use super::*;
-use crate::ECS::fetch::Fetch;
-use crate::ECS::entity::EntityBuilder;
+use manufacture_engine::ECS::fetch::Fetch;
+use manufacture_engine::ECS::entity::EntityBuilder;
 
 mod vector;
 pub use vector::*;

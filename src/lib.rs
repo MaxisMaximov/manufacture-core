@@ -1,5 +1,5 @@
 use manufacture_engine::ECS::dispatcher::DispatcherBuilder;
-use manufacture_engine::ECS::prelude::*;
+use manufacture_engine::prelude::*;
 
 pub mod commands;
 pub mod comp;
@@ -24,11 +24,11 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     // -- Events --
     world.register_event::<events::EntitySpawned>();
     world.register_event::<events::EntityDespawned>();
-    world.register_event::<events::ExitApp>();
+    world.register_event::<ExitApp>();
 
     // -- Resources --
     world.register_res::<resources::CMDInput>();
-    world.register_res::<resources::DeltaT>();
+    world.register_res::<DeltaT>();
 
     // -- Systems --
     disp_build.add::<systems::CMDInputHandler>();
