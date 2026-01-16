@@ -92,7 +92,7 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
 name = "manufacture_core"
-version = "0.1.0"
+version = "0.3.4"
 dependencies = [
  "crossterm",
  "manufacture_engine",
@@ -100,8 +100,7 @@ dependencies = [
 
 [[package]]
 name = "manufacture_engine"
-version = "0.1.0"
-source = "git+https://github.com/MaxisMaximov/manufacture-engine.git#ede676bcd6cc584c82b877710ea88712cc398e01"
+version = "0.6.5"
 dependencies = [
  "rand",
 ]
