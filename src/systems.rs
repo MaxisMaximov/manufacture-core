@@ -9,7 +9,7 @@ use resources::*;
 /// TODO: Fix the double input issue
 pub struct CMDInputHandler;
 impl System for CMDInputHandler{
-    type Data = &'static mut CMDInput;
+    type Data<'a> = &'a mut CMDInput;
 
     const ID: &'static str = "CMDInput";
 
@@ -19,7 +19,7 @@ impl System for CMDInputHandler{
         Self
     }
 
-    fn execute(&mut self, mut data: Request<'_, Self::Data>) {
+    fn execute(&mut self, mut data: Request<'_, Self::Data<'_>>) {
         use crossterm::event::{Event, read, poll};
         if poll(std::time::Duration::from_millis(0)).unwrap(){
             if let Event::Key(key) = read().unwrap(){

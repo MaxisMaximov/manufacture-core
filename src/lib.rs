@@ -24,11 +24,9 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     // -- Events --
     world.register_event::<events::EntitySpawned>();
     world.register_event::<events::EntityDespawned>();
-    world.register_event::<ExitApp>();
 
     // -- Resources --
     world.register_res::<resources::CMDInput>();
-    world.register_res::<DeltaT>();
 
     // -- Systems --
     disp_build.add::<systems::CMDInputHandler>();

@@ -20,7 +20,7 @@ impl<C: Component> QueryFilter for With<C>{
         world.fetch::<C>()
     }
 
-    fn filter<'a>(fetched: &'a Self::Item<'a>, index: &usize) -> bool {
+    fn filter<'qref, 'query: 'qref>(fetched: &'qref Self::Item<'query>, index: &usize) -> bool {
         fetched.get(index).is_some()
     }
 }
@@ -35,7 +35,7 @@ impl<C: Component> QueryFilter for Without<C>{
         world.fetch::<C>()
     }
 
-    fn filter<'a>(fetched: &'a Self::Item<'a>, index: &usize) -> bool {
+    fn filter<'qref, 'query: 'qref>(fetched: &'qref Self::Item<'query>, index: &usize) -> bool {
         fetched.get(index).is_none()
     }
 }
