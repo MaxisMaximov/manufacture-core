@@ -109,7 +109,7 @@ impl Component for CMDSprite{
 /// 
 /// Typically used to direct player actions to a specific entity
 pub struct PlayerController{
-    pub pid: u16,
+    pub pid: u32,
     pub active: bool,
 }
 impl Component for PlayerController{

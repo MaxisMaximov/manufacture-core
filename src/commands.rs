@@ -7,7 +7,8 @@ use types::EntityPrefab;
 /// 
 /// Creates a new entity and sends an Event with the Entity's Token for Systems to use
 /// 
-/// Note: This creates a new Entity **without any Components**, you will have to add those later yourself. If you wish to create an Entity with predefined Components, use `SpawnPrefab` along with `Prefab` trait from `types`
+/// Note: This creates a new Entity **without any Components**, you will have to add those later yourself.
+/// If you wish to create an Entity with predefined Components, use `SpawnPrefab` along with `Prefab` trait from `types`
 pub struct Spawn;
 impl Command for Spawn{
     fn execute(&mut self, world: &mut World) {
@@ -32,7 +33,8 @@ impl<T: EntityPrefab + 'static> Command for SpawnPrefab<T>{
 
 /// Send a Command to despawn an Entity via ID
 /// 
-/// It's generally discouraged to despawn Entities this way. If you can, use `DespawnToken` instead
+/// It's generally discouraged to despawn Entities this way.
+/// If you can, use `DespawnToken` instead
 pub struct DespawnID(pub usize);
 impl Command for DespawnID{
     fn execute(&mut self, world: &mut World) {
