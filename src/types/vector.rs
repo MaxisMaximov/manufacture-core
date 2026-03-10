@@ -112,6 +112,22 @@ impl MulAssign<f32> for Vector2{
         self.y *= rhs;
     }
 }
+impl Mul<Vector2> for Vector2{
+    type Output = Self;
+
+    fn mul(self, rhs: Vector2) -> Self::Output {
+        Self{
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+        }
+    }
+}
+impl MulAssign<Vector2> for Vector2{
+    fn mul_assign(&mut self, rhs: Vector2) {
+        self.x *= rhs.x;
+        self.y *= rhs.y;
+    }
+}
 impl Div<f32> for Vector2{
     type Output = Self;
 
@@ -126,6 +142,22 @@ impl DivAssign<f32> for Vector2 {
     fn div_assign(&mut self, rhs: f32) {
         self.x /= rhs;
         self.y /= rhs;
+    }
+}
+impl Div<Vector2> for Vector2{
+    type Output = Self;
+
+    fn div(self, rhs: Vector2) -> Self::Output {
+        Self{
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+        }
+    }
+}
+impl DivAssign<Vector2> for Vector2{
+    fn div_assign(&mut self, rhs: Vector2) {
+        self.x /= rhs.x;
+        self.y /= rhs.y;
     }
 }
 
@@ -145,7 +177,7 @@ impl Vector3{
     /// 
     /// Simpler explanation: How similar the two Vectors are
     /// - Sign defines direction, positive means same direction, negative means opposite direction
-    /// - Value defines how similar the magnitude is
+    /// - Value defines how similar the magnitude is, 0 means perpendicular
     pub fn dot(self, other: Self) -> f32{
         (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
     }
@@ -158,7 +190,7 @@ impl Vector3{
     }
     /// Returns the cross product Vector of `self` and `other`
     /// 
-    /// Simpler explanation: Returns a Vector perpendicular to `self` and `other`, the magnitude of it is inverse of dot product: it defines how *different* the two Vectors are
+    /// Simpler explanation: Returns a Vector perpendicular to `self` and `other` with the magnitude of it being *inverse* of dot product: it defines how *different* the two Vectors are
     pub fn cross(self, other: Self) -> Self{
         Self{
             x: self.y * other.z - self.z * other.y,
@@ -249,6 +281,24 @@ impl MulAssign<f32> for Vector3{
         self.z *= rhs
     }
 }
+impl Mul<Vector3> for Vector3{
+    type Output = Self;
+
+    fn mul(self, rhs: Vector3) -> Self::Output {
+        Self{
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+impl MulAssign<Vector3> for Vector3{
+    fn mul_assign(&mut self, rhs: Vector3) {
+        self.x *= rhs.x;
+        self.y *= rhs.y;
+        self.z *= rhs.z;
+    }
+}
 impl Div<f32> for Vector3{
     type Output = Self;
 
@@ -265,5 +315,23 @@ impl DivAssign<f32> for Vector3 {
         self.x /= rhs;
         self.y /= rhs;
         self.z /= rhs
+    }
+}
+impl Div<Vector3> for Vector3{
+    type Output = Self;
+
+    fn div(self, rhs: Vector3) -> Self::Output {
+        Self{
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+            z: self.z / rhs.z,
+        }
+    }
+}
+impl DivAssign<Vector3> for Vector3{
+    fn div_assign(&mut self, rhs: Vector3) {
+        self.x /= rhs.x;
+        self.y /= rhs.y;
+        self.z /= rhs.z;
     }
 }

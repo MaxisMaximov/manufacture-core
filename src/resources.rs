@@ -16,11 +16,11 @@ impl CMDInput{
         self.key
     }
     /// Set the current key
-    pub fn set(&mut self, key: KeyEvent){
+    pub(crate) fn set(&mut self, key: KeyEvent){
         self.key = key
     }
     /// Set key back to Null
-    pub fn reset(&mut self){
+    pub(crate) fn reset(&mut self){
         self.key = KeyEvent::new(KeyCode::Null, KeyModifiers::NONE)
     }
 }
