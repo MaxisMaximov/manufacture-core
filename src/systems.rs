@@ -1,3 +1,5 @@
+use crate::{comp::{CMDSprite, Transform2D, Transform3D}};
+
 use super::*;
 use resources::*;
 
@@ -11,8 +13,8 @@ use resources::*;
 /// and may prevent the Handler from reading other keys
 /// 
 /// TODO: Fix the double input issue
-pub struct CMDInputHandler;
-impl System for CMDInputHandler{
+pub struct CMDInputGetter;
+impl System for CMDInputGetter{
     type Data<'a> = &'a mut CMDInput;
     const ID: &'static str = "CMDInput";
     const TYPE: SystemType = SystemType::Preprocessor;
@@ -28,5 +30,20 @@ impl System for CMDInputHandler{
         }else{
             data.reset();
         }
+    }
+}
+
+pub struct CMDRenderer;
+impl System for CMDRenderer{
+    type Data<'a> = Query<(&'a CMDSprite, Option<&'a Transform2D>, Option<&'a Transform3D>), ()>;
+    const ID: &'static str = "CMDRenderer";
+    const TYPE: SystemType = SystemType::Postprocessor;
+
+    fn new() -> Self {
+        Self
+    }
+
+    fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
+        todo!()
     }
 }

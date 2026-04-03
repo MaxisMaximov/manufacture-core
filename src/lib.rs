@@ -29,5 +29,5 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     world.register_res::<resources::CMDInput>();
 
     // -- Systems --
-    disp_build.add::<systems::CMDInputHandler>();
+    disp_build.add::<systems::CMDInputGetter>();
 }
