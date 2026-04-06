@@ -1,4 +1,4 @@
-use crate::{comp::{CMDSprite, Transform2D, Transform3D}};
+use crate::comp::{CMDSprite, Transform2D, Transform3D};
 
 use super::*;
 use resources::*;
@@ -35,7 +35,7 @@ impl System for CMDInputGetter{
 
 pub struct CMDRenderer;
 impl System for CMDRenderer{
-    type Data<'a> = Query<(&'a CMDSprite, Option<&'a Transform2D>, Option<&'a Transform3D>), ()>;
+    type Data<'a> = ();
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
 
@@ -44,6 +44,12 @@ impl System for CMDRenderer{
     }
 
     fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
-        todo!()
+        use crossterm::terminal;
+        let terminal_size = terminal::size();
+
+        match terminal_size{
+            Ok(size) => print!("\rDEBUG: Terminal size: {:?}", size),
+            Err(err) => print!("\rDEBUG: Couldn't get Terminal size for following reason: {}", err),
+        }
     }
 }

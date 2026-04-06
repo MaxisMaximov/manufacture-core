@@ -91,8 +91,12 @@ pub trait Tag{
 /// 
 /// Represents a 2D ASCII art image
 /// 
+/// Origin is at top left, represented by `(0, 0)`
+/// 
 /// Individual *"pixels"* are `(ch, fg, bg)` tuples: `ch`aracter, `f`ore`g`round color and `b`ack`g`round color.  
 /// FG and BG colors are `(R, G, B)` tuples that use `u8` as values
+/// 
+/// TODO: Add varying origin point
 pub struct CMDSprite{
     pub size_x: u8,
     pub size_y: u8,
