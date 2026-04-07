@@ -44,16 +44,25 @@ impl System for CMDRenderer{
     }
 
     fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
-        use crossterm::terminal;
+        use crossterm::{cursor, style, terminal};
+        use crossterm::execute;
         use std::io::stdout;
 
-        let _ = crossterm::execute!(stdout(), crossterm::cursor::MoveTo(0, 0));
+        execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
         match terminal::size(){
-            Ok(size) => print!("\rDEBUG: Terminal size: {:?}", size),
-            Err(err) => print!("\rDEBUG: Couldn't get Terminal size for following reason: {}", err),
+            Ok(size) => {
+                print!("DEBUG: Terminal size: {:?}", size);
+
+                execute!(stdout(), cursor::MoveTo(0, 0), style::Print("#")).ok();
+                execute!(stdout(), cursor::MoveTo(size.0, 0), style::Print("#")).ok();
+                execute!(stdout(), cursor::MoveTo(0, size.1), style::Print("#")).ok();
+                execute!(stdout(), cursor::MoveTo(size.0, size.1), style::Print("#")).ok();
+
+            },
+            Err(_) => print!("DEBUG: Couldn't get Terminal size"),
         }
 
-        let _ = crossterm::execute!(stdout(), terminal::Clear(terminal::ClearType::FromCursorDown));
+        execute!(stdout(), terminal::Clear(terminal::ClearType::FromCursorDown)).ok();
     }
 }
