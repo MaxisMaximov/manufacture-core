@@ -50,19 +50,20 @@ impl System for CMDRenderer{
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
-        match terminal::size(){
+        let size = match terminal::size(){
             Ok(size) => {
                 print!("DEBUG: Terminal size: {:?}", size);
-
-                execute!(stdout(), cursor::MoveTo(0, 0), style::Print("#")).ok();
-                execute!(stdout(), cursor::MoveTo(size.0, 0), style::Print("#")).ok();
-                execute!(stdout(), cursor::MoveTo(0, size.1), style::Print("#")).ok();
-                execute!(stdout(), cursor::MoveTo(size.0, size.1), style::Print("#")).ok();
-
+                size
             },
-            Err(_) => print!("DEBUG: Couldn't get Terminal size"),
-        }
+            Err(_) => {
+                print!("DEBUG: Couldn't get Terminal size. Defaulting to (16, 9). Resize your terminal accordingly");
+                (16, 9)
+            },
+        };
 
-        execute!(stdout(), terminal::Clear(terminal::ClearType::FromCursorDown)).ok();
+        execute!(stdout(), cursor::MoveTo(0, 0), style::Print("#")).ok();
+        execute!(stdout(), cursor::MoveTo(size.0, 0), style::Print("#")).ok();
+        execute!(stdout(), cursor::MoveTo(0, size.1), style::Print("#")).ok();
+        execute!(stdout(), cursor::MoveTo(size.0, size.1), style::Print("#")).ok();
     }
 }
