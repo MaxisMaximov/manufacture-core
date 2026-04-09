@@ -1,5 +1,3 @@
-use crate::comp::{CMDSprite, Transform2D, Transform3D};
-
 use super::*;
 use resources::*;
 
@@ -43,7 +41,7 @@ impl System for CMDRenderer{
         Self
     }
 
-    fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
+    fn execute(&mut self, _data: Request<'_, Self::Data<'_>>) {
         use crossterm::{cursor, style, terminal};
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
@@ -53,7 +51,7 @@ impl System for CMDRenderer{
         let size = match terminal::size(){
             Ok(size) => {
                 eprint!("DEBUG: Terminal size: {:?}", size);
-                size
+                (size.0 as usize, size.1 as usize)
             },
             Err(_) => {
                 eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (16, 9). Resize your terminal accordingly");
@@ -61,18 +59,18 @@ impl System for CMDRenderer{
             },
         };
 
-        let mut buffer = vec![' '; size.0 as usize * size.1 as usize];
+        self.buffer = vec![' '; size.0 * size.1];
 
         // Corner markings
         // X + Y * sizeX
-        buffer[(0 + 0 * size.0) as usize] = '#';
-        buffer[((size.0 - 1) + 0 * size.0) as usize] = '#';
-        buffer[(0 + (size.1 - 1) * size.0) as usize] = '#';
-        buffer[((size.0 - 1) + (size.1 - 1) * size.0) as usize] = '#';
+        self.buffer[0 + 0 * size.0 ] = '#';
+        self.buffer[(size.0 - 1) + 0 * size.0 ] = '#';
+        self.buffer[0 + (size.1 - 1) * size.0 ] = '#';
+        self.buffer[(size.0 - 1) + (size.1 - 1) * size.0] = '#';
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
-        for line in buffer.chunks(size.0 as usize){
+        for line in self.buffer.chunks(size.0){
             for chr in line.iter(){
                 queue!(stdout(), style::Print(chr)).ok();
             }
