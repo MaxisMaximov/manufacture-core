@@ -46,24 +46,39 @@ impl System for CMDRenderer{
     fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
         use crossterm::{cursor, style, terminal};
         use crossterm::execute;
-        use std::io::stdout;
+        use std::io::{stdout, Write};
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
         let size = match terminal::size(){
             Ok(size) => {
-                print!("DEBUG: Terminal size: {:?}", size);
+                eprint!("DEBUG: Terminal size: {:?}", size);
                 size
             },
             Err(_) => {
-                print!("DEBUG: Couldn't get Terminal size. Defaulting to (16, 9). Resize your terminal accordingly");
+                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (16, 9). Resize your terminal accordingly");
                 (16, 9)
             },
         };
 
-        execute!(stdout(), cursor::MoveTo(0, 0), style::Print("#")).ok();
-        execute!(stdout(), cursor::MoveTo(size.0, 0), style::Print("#")).ok();
-        execute!(stdout(), cursor::MoveTo(0, size.1), style::Print("#")).ok();
-        execute!(stdout(), cursor::MoveTo(size.0, size.1), style::Print("#")).ok();
+        let mut buffer = vec![' '; size.0 as usize * size.1 as usize];
+
+        // Corner markings
+        // X + Y * sizeX
+        buffer[(0 + 0 * size.0) as usize] = '#';
+        buffer[((size.0 - 1) + 0 * size.0) as usize] = '#';
+        buffer[(0 + (size.1 - 1) * size.0) as usize] = '#';
+        buffer[((size.0 - 1) + (size.1 - 1) * size.0) as usize] = '#';
+
+        execute!(stdout(), cursor::MoveTo(0, 0)).ok();
+
+        for line in buffer.chunks(size.0 as usize){
+            for chr in line.iter(){
+                print!("{}", chr);
+            }
+            execute!(stdout(), cursor::MoveToNextLine(1)).ok();
+        };
+
+        stdout().flush().ok();
     }
 }
