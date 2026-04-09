@@ -45,7 +45,7 @@ impl System for CMDRenderer{
 
     fn execute(&mut self, data: Request<'_, Self::Data<'_>>) {
         use crossterm::{cursor, style, terminal};
-        use crossterm::execute;
+        use crossterm::{execute, queue};
         use std::io::{stdout, Write};
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
@@ -74,11 +74,9 @@ impl System for CMDRenderer{
 
         for line in buffer.chunks(size.0 as usize){
             for chr in line.iter(){
-                print!("{}", chr);
+                queue!(stdout(), style::Print(chr)).ok();
             }
-            execute!(stdout(), cursor::MoveToNextLine(1)).ok();
+            stdout().flush().ok();
         };
-
-        stdout().flush().ok();
     }
 }
