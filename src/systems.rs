@@ -68,14 +68,14 @@ impl System for CMDRenderer{
         // Here to prevent unnecessary memory changes
         if self.size != size{
             self.buffer = vec![' '; size.0 * size.1];
+            self.size = size;
         }
 
         // Corner markings
-        // X + Y * sizeX
-        self.buffer[0 + 0 * self.size.0 ] = '#';
-        self.buffer[(self.size.0 - 1) + 0 * self.size.0 ] = '#';
-        self.buffer[0 + (self.size.1 - 1) * self.size.0 ] = '#';
-        self.buffer[(self.size.0 - 1) + (self.size.1 - 1) * self.size.0] = '#';
+        self.plot(0, 0, '#');
+        self.plot(self.size.0 - 1, 0, '#');
+        self.plot(0, self.size.1 - 1, '#');
+        self.plot(self.size.0 - 1, self.size.1 - 1, '#');
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -85,5 +85,10 @@ impl System for CMDRenderer{
             }
             stdout().flush().ok();
         };
+    }
+}
+impl CMDRenderer{
+    fn plot(&mut self, x: usize, y: usize, chr: char){
+        self.buffer[x + y*self.size.0] = chr;
     }
 }
