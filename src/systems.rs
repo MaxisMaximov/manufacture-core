@@ -54,7 +54,7 @@ impl System for CMDRenderer{
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
-        let size = match terminal::size(){
+        let cmd_size = match terminal::size(){
             Ok(size) => {
                 eprint!("DEBUG: Terminal size: {:?}", size);
                 (size.0 as usize, size.1 as usize)
@@ -66,16 +66,21 @@ impl System for CMDRenderer{
         };
 
         // Here to prevent unnecessary memory changes
-        if self.size != size{
-            self.buffer = vec![' '; size.0 * size.1];
-            self.size = size;
+        if self.size != cmd_size{
+            self.buffer = vec![' '; cmd_size.0 * cmd_size.1];
+            self.size = cmd_size;
         }
+
+        // Criss/cross lines
+        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■');
+        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■');
 
         // Corner markings
         self.plot(0, 0, '#');
         self.plot(self.size.0 - 1, 0, '#');
         self.plot(0, self.size.1 - 1, '#');
         self.plot(self.size.0 - 1, self.size.1 - 1, '#');
+
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -90,5 +95,54 @@ impl System for CMDRenderer{
 impl CMDRenderer{
     fn plot(&mut self, x: usize, y: usize, chr: char){
         self.buffer[x + y*self.size.0] = chr;
+    }
+    /// Uses Brehensam algorithm modified to work purely on unsigned integers
+    fn draw_line(&mut self, a: (usize, usize), b: (usize, usize), chr: char){
+        let delta_x = a.0.abs_diff(b.0);
+        let delta_y = a.1.abs_diff(b.1);
+
+        if delta_x >= delta_y{
+
+            let (start, end) = {
+                // Swap A and B if B is closer to (0, 0)
+                if a.0 < b.0{ (a, b) }else{ (b, a) }
+            };
+
+            let mut err = delta_x - delta_y;
+
+            let mut y = start.1;
+
+            for x in start.0..=end.0{
+                self.plot(x, y, chr);
+
+                err -= delta_y;
+
+                if err <= delta_y{
+                    err += delta_x;
+                    if start.1 < end.1{ y += 1 }else{ y -= 1 }
+                }
+            }
+
+        }else{
+            let (start, end) = {
+                // Swap A and B if B is closer to (0, 0)
+                if a.1 < b.1{ (a, b) }else{ (b, a) }
+            };
+
+            let mut err = delta_y - delta_x;
+
+            let mut x = start.0;
+
+            for y in start.1..=end.1{
+                self.plot(x, y, chr);
+
+                err -= delta_x;
+
+                if err <= delta_x{
+                    err += delta_y;
+                    if start.0 < end.0{ x += 1 }else{ x -= 1 }
+                }
+            }
+        }
     }
 }
