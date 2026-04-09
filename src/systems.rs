@@ -31,14 +31,20 @@ impl System for CMDInputGetter{
     }
 }
 
-pub struct CMDRenderer;
+pub struct CMDRenderer{
+    buffer: Vec<char>,
+    size: (usize, usize)
+}
 impl System for CMDRenderer{
     type Data<'a> = ();
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
 
     fn new() -> Self {
-        Self
+        Self{
+            buffer: Vec::new(),
+            size: (0, 0)
+        }
     }
 
     fn execute(&mut self, _data: Request<'_, Self::Data<'_>>) {
@@ -59,18 +65,21 @@ impl System for CMDRenderer{
             },
         };
 
-        self.buffer = vec![' '; size.0 * size.1];
+        // Here to prevent unnecessary memory changes
+        if self.size != size{
+            self.buffer = vec![' '; size.0 * size.1];
+        }
 
         // Corner markings
         // X + Y * sizeX
-        self.buffer[0 + 0 * size.0 ] = '#';
-        self.buffer[(size.0 - 1) + 0 * size.0 ] = '#';
-        self.buffer[0 + (size.1 - 1) * size.0 ] = '#';
-        self.buffer[(size.0 - 1) + (size.1 - 1) * size.0] = '#';
+        self.buffer[0 + 0 * self.size.0 ] = '#';
+        self.buffer[(self.size.0 - 1) + 0 * self.size.0 ] = '#';
+        self.buffer[0 + (self.size.1 - 1) * self.size.0 ] = '#';
+        self.buffer[(self.size.0 - 1) + (self.size.1 - 1) * self.size.0] = '#';
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
-        for line in self.buffer.chunks(size.0){
+        for line in self.buffer.chunks(self.size.0){
             for chr in line.iter(){
                 queue!(stdout(), style::Print(chr)).ok();
             }
