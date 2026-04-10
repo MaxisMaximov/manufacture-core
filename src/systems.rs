@@ -82,14 +82,19 @@ impl System for CMDRenderer{
         self.plot(0, self.size.1 - 1, '#');
         self.plot(self.size.0 - 1, self.size.1 - 1, '#');
 
-        // Middle Box
+        // Middle Boxes
         {
             let third = (self.size.0 / 3, self.size.1 / 3);
             self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#');
+
+            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=');
         }
 
+        // Boundary border
+        self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#');
+
         // Debug text
-        self.write_sequence((2, 2), &format!("DEBUG: Terminal size: {:?}", self.size));
+        self.write_sequence((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size));
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -166,6 +171,18 @@ impl CMDRenderer{
 
         for x in tr.0..bl.0{
             for y in tr.1..bl.1{
+                self.plot(x, y, chr);
+            }
+        }
+    }
+    fn draw_box(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
+        for y in [a.1, b.1]{
+            for x in a.0..b.0{
+                self.plot(x, y, chr);
+            }
+        }
+        for x in [a.0, b.0]{
+            for y in a.1..b.1{
                 self.plot(x, y, chr);
             }
         }
