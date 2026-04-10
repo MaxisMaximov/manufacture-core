@@ -45,7 +45,7 @@ impl System for CMDRenderer{
     fn new() -> Self {
         Self{
             buffer: Vec::new(),
-            size: (0, 0)
+            size: (100, 20)
         }
     }
 
@@ -62,8 +62,8 @@ impl System for CMDRenderer{
                 (size.0 as usize, size.1 as usize)
             },
             Err(_) => {
-                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (16, 9). Resize your terminal accordingly");
-                (16, 9)
+                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (32, 18). Resize your terminal accordingly");
+                (100, 20)
             },
         };
 
