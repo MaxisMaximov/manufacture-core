@@ -31,12 +31,14 @@ impl System for CMDInputGetter{
     }
 }
 
+
 type CMDCoords = (usize, usize);
 
 pub struct CMDRenderer{
     buffer: Vec<char>,
     size: CMDCoords
 }
+
 impl System for CMDRenderer{
     type Data<'a> = ();
     const ID: &'static str = "CMDRenderer";
@@ -62,6 +64,7 @@ impl System for CMDRenderer{
             },
             Err(_) => {
                 eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (32, 18). Resize your terminal accordingly");
+                std::thread::sleep(std::time::Duration::from_secs(5));
                 (100, 20)
             },
         };
@@ -169,20 +172,22 @@ impl CMDRenderer{
     fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
-        for x in tr.0..bl.0{
-            for y in tr.1..bl.1{
+        for x in tr.0..=bl.0{
+            for y in tr.1..=bl.1{
                 self.plot(x, y, chr);
             }
         }
     }
     fn draw_box(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
-        for y in [a.1, b.1]{
-            for x in a.0..b.0{
+        let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
+
+        for y in [tr.1, bl.1]{
+            for x in tr.0..=bl.0{
                 self.plot(x, y, chr);
             }
         }
-        for x in [a.0, b.0]{
-            for y in a.1..b.1{
+        for x in [tr.0, bl.0]{
+            for y in tr.1..=bl.1{
                 self.plot(x, y, chr);
             }
         }
