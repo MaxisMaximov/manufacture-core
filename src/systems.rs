@@ -58,7 +58,6 @@ impl System for CMDRenderer{
 
         let cmd_size = match terminal::size(){
             Ok(size) => {
-                eprint!("DEBUG: Terminal size: {:?}", size);
                 (size.0 as usize, size.1 as usize)
             },
             Err(_) => {
@@ -83,6 +82,8 @@ impl System for CMDRenderer{
         self.plot(0, self.size.1 - 1, '#');
         self.plot(self.size.0 - 1, self.size.1 - 1, '#');
 
+        // Debug text
+        self.write_sequence((2, 2), &format!("DEBUG: Terminal size: {:?}", self.size));
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -95,7 +96,9 @@ impl System for CMDRenderer{
     }
 }
 impl CMDRenderer{
+    #[inline(always)]
     fn plot(&mut self, x: usize, y: usize, chr: char){
+        if (x, y) > self.size{ return }
         self.buffer[x + y*self.size.0] = chr;
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
@@ -145,6 +148,11 @@ impl CMDRenderer{
                     if start.0 < end.0{ x += 1 }else{ x -= 1 }
                 }
             }
+        }
+    }
+    fn write_sequence(&mut self, pos: CMDCoords, text: &str){
+        for (offset, chr) in text.char_indices(){
+            self.plot(pos.0 + offset, pos.1, chr);
         }
     }
 }
