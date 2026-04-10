@@ -82,6 +82,12 @@ impl System for CMDRenderer{
         self.plot(0, self.size.1 - 1, '#');
         self.plot(self.size.0 - 1, self.size.1 - 1, '#');
 
+        // Middle Box
+        {
+            let third = (self.size.0 / 3, self.size.1 / 3);
+            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#');
+        }
+
         // Debug text
         self.write_sequence((2, 2), &format!("DEBUG: Terminal size: {:?}", self.size));
 
@@ -153,6 +159,15 @@ impl CMDRenderer{
     fn write_sequence(&mut self, pos: CMDCoords, text: &str){
         for (offset, chr) in text.char_indices(){
             self.plot(pos.0 + offset, pos.1, chr);
+        }
+    }
+    fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
+        let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
+
+        for x in tr.0..bl.0{
+            for y in tr.1..bl.1{
+                self.plot(x, y, chr);
+            }
         }
     }
 }
