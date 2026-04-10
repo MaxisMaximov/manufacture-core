@@ -31,9 +31,11 @@ impl System for CMDInputGetter{
     }
 }
 
+type CMDCoords = (usize, usize);
+
 pub struct CMDRenderer{
     buffer: Vec<char>,
-    size: (usize, usize)
+    size: CMDCoords
 }
 impl System for CMDRenderer{
     type Data<'a> = ();
@@ -97,7 +99,7 @@ impl CMDRenderer{
         self.buffer[x + y*self.size.0] = chr;
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
-    fn draw_line(&mut self, a: (usize, usize), b: (usize, usize), chr: char){
+    fn draw_line(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
 
