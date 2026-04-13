@@ -39,7 +39,7 @@ const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
-    size: CMDCoords
+    size: CMDCoords,
 }
 
 impl System for CMDRenderer{
@@ -50,7 +50,7 @@ impl System for CMDRenderer{
     fn new() -> Self {
         Self{
             buffer: Vec::new(),
-            size: (100, 20)
+            size: (100, 20),
         }
     }
 
@@ -79,21 +79,21 @@ impl System for CMDRenderer{
         }
 
         // Criss/cross lines
-        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', (255, 0, 0), CMD_BG_DEFAULT);
+        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Corner markings
-        self.plot(0, 0, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-        self.plot(self.size.0 - 1, 0, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-        self.plot(0, self.size.1 - 1, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-        self.plot(self.size.0 - 1, self.size.1 - 1, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.plot(0, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(self.size.0 - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(0, self.size.1 - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(self.size.0 - 1, self.size.1 - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Middle Boxes
         {
             let third = (self.size.0 / 3, self.size.1 / 3);
-            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#', CMD_FG_DEFAULT, (0, 0, 255));
 
-            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=', CMD_FG_DEFAULT, (0, 0, 255));
         }
 
         // Boundary border
