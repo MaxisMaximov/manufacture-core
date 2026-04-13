@@ -100,7 +100,23 @@ impl System for CMDRenderer{
         self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Debug text
-        self.write_sequence((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.draw_sequence(
+            (self.size.0 / 2, self.size.1 / 2), 
+            &[
+                ('H', (255, 0, 0), (0, 255, 255)),
+                ('e', (255, 128, 0), (0, 128, 255)),
+                ('l', (255, 255, 0), (0, 0, 255)),
+                ('l', (128, 255, 0), (128, 0, 255)),
+                ('o', (0, 255, 0), (255, 0, 255)),
+                (' ', CMD_FG_DEFAULT, (255, 0, 128)),
+                ('W', (0, 255, 255), (255, 0, 0)),
+                ('o', (0, 128, 255), (255, 128, 0)),
+                ('r', (0, 0, 255), (255, 255, 0)),
+                ('l', (128, 0, 255), (128, 255, 0)),
+                ('d', (255, 0, 255), (0, 255, 0)),
+                ]
+        );
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -180,9 +196,14 @@ impl CMDRenderer{
             }
         }
     }
-    fn write_sequence(&mut self, pos: CMDCoords, text: &str, fg: CMDColor, bg: CMDColor){
+    fn write_text(&mut self, pos: CMDCoords, text: &str, fg: CMDColor, bg: CMDColor){
         for (offset, chr) in text.char_indices(){
             self.plot(pos.0 + offset, pos.1, chr, fg, bg);
+        }
+    }
+    fn draw_sequence(&mut self, pos: CMDCoords, sequence: &[(char, CMDColor, CMDColor)]){
+        for (offset, (chr, fg, bg)) in sequence.iter().enumerate(){
+            self.plot(pos.0 + offset, pos.1, *chr, *fg, *bg);
         }
     }
     fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
