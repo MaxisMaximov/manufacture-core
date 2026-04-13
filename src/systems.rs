@@ -68,6 +68,7 @@ impl System for CMDRenderer{
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
         let profile_start = std::time::Instant::now();
+        let mut lock = stdout().lock();
 
         let cmd_size = match terminal::size(){
             Ok(size) => {
@@ -139,25 +140,24 @@ impl System for CMDRenderer{
 
         execute!(lock, cursor::MoveTo(0, 0)).ok();
 
-        for line in self.buffer.chunks(self.size.0){
-            for (chr, fg, bg) in line.iter(){
-                queue!(stdout(), 
-                    style::Print(
-                        chr.with(style::Color::Rgb{
-                            r: fg.0,
-                            g: fg.1,
-                            b: fg.2
-                        })
-                        .on(style::Color::Rgb{
-                            r: bg.0,
-                            g: bg.1,
-                            b: bg.2
-                        })
-                    )
-                ).ok();
-            }
-            stdout().flush().ok();
+        for (chr, fg, bg) in self.buffer.iter(){
+            queue!(lock, 
+                style::Print(
+                    chr.with(style::Color::Rgb{
+                        r: fg.0,
+                        g: fg.1,
+                        b: fg.2
+                    })
+                    .on(style::Color::Rgb{
+                        r: bg.0,
+                        g: bg.1,
+                        b: bg.2
+                    })
+                )
+            ).ok();
         };
+        lock.flush().ok();
+        drop(lock)
     }
 }
 impl CMDRenderer{
