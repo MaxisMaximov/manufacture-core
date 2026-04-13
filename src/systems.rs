@@ -40,7 +40,7 @@ const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     size: CMDCoords,
-last_check_frame: u64,
+    last_check_frame: u64,
     last_logic_frame: u64,
     last_frames: u64
 }
@@ -126,12 +126,18 @@ impl System for CMDRenderer{
                 ]
         );
 
+        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", _data.frame(), _data.logic_frame(), self.last_check_frame, _data.frame() - self.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+
         if self.last_logic_frame != _data.logic_frame() && _data.logic_frame() % 20 == 0 {
             self.last_frames = _data.frame() - self.last_check_frame;
             self.last_check_frame = _data.frame();
             self.last_logic_frame = _data.logic_frame();
         }
         self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        
+        self.write_text((3, 6), &format!("DEBUG: Debug frame processing took: {:?}", profile_start.elapsed()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+
+        execute!(lock, cursor::MoveTo(0, 0)).ok();
 
         for line in self.buffer.chunks(self.size.0){
             for (chr, fg, bg) in line.iter(){
