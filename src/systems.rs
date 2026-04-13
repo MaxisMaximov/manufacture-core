@@ -35,7 +35,7 @@ impl System for CMDInputGetter{
 type CMDCoords = (usize, usize);
 
 pub struct CMDRenderer{
-    buffer: Vec<char>,
+    buffer: Vec<(char, (u8, u8, u8))>,
     size: CMDCoords
 }
 
@@ -52,7 +52,7 @@ impl System for CMDRenderer{
     }
 
     fn execute(&mut self, _data: Request<'_, Self::Data<'_>>) {
-        use crossterm::{cursor, style, terminal};
+        use crossterm::{cursor, style::{self, Stylize}, terminal};
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
 
@@ -71,7 +71,7 @@ impl System for CMDRenderer{
 
         // Here to prevent unnecessary memory changes
         if self.size != cmd_size{
-            self.buffer = vec![' '; cmd_size.0 * cmd_size.1];
+            self.buffer = vec![(' ', (255, 255, 255)); cmd_size.0 * cmd_size.1];
             self.size = cmd_size;
         }
 
@@ -102,8 +102,16 @@ impl System for CMDRenderer{
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
         for line in self.buffer.chunks(self.size.0){
-            for chr in line.iter(){
-                queue!(stdout(), style::Print(chr)).ok();
+            for (chr, fg) in line.iter(){
+                queue!(stdout(), 
+                    style::Print(
+                        chr.with(style::Color::Rgb{
+                            r: fg.0,
+                            g: fg.1,
+                            b: fg.2
+                        })
+                    )
+                ).ok();
             }
             stdout().flush().ok();
         };
@@ -113,7 +121,7 @@ impl CMDRenderer{
     #[inline(always)]
     fn plot(&mut self, x: usize, y: usize, chr: char){
         if (x, y) > self.size{ return }
-        self.buffer[x + y*self.size.0] = chr;
+        self.buffer[x + y*self.size.0] = (chr, (255, 255, 255));
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: CMDCoords, b: CMDCoords, chr: char){
