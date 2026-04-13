@@ -35,9 +35,10 @@ impl System for CMDInputGetter{
 type CMDCoords = (usize, usize);
 type CMDColor = (u8, u8, u8);
 const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);
+const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 
 pub struct CMDRenderer{
-    buffer: Vec<(char, CMDColor)>,
+    buffer: Vec<(char, CMDColor, CMDColor)>,
     size: CMDCoords
 }
 
@@ -73,44 +74,49 @@ impl System for CMDRenderer{
 
         // Here to prevent unnecessary memory changes
         if self.size != cmd_size{
-            self.buffer = vec![(' ', CMD_FG_DEFAULT); cmd_size.0 * cmd_size.1];
+            self.buffer = vec![(' ', CMD_FG_DEFAULT, CMD_BG_DEFAULT); cmd_size.0 * cmd_size.1];
             self.size = cmd_size;
         }
 
         // Criss/cross lines
-        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', CMD_FG_DEFAULT);
-        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', CMD_FG_DEFAULT);
+        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Corner markings
-        self.plot(0, 0, '#', CMD_FG_DEFAULT);
-        self.plot(self.size.0 - 1, 0, '#', CMD_FG_DEFAULT);
-        self.plot(0, self.size.1 - 1, '#', CMD_FG_DEFAULT);
-        self.plot(self.size.0 - 1, self.size.1 - 1, '#', CMD_FG_DEFAULT);
+        self.plot(0, 0, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.plot(self.size.0 - 1, 0, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.plot(0, self.size.1 - 1, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.plot(self.size.0 - 1, self.size.1 - 1, '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Middle Boxes
         {
             let third = (self.size.0 / 3, self.size.1 / 3);
-            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#', CMD_FG_DEFAULT);
+            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
-            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=', CMD_FG_DEFAULT);
+            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         }
 
         // Boundary border
-        self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#', CMD_FG_DEFAULT);
+        self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Debug text
-        self.write_sequence((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT);
+        self.write_sequence((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
         for line in self.buffer.chunks(self.size.0){
-            for (chr, fg) in line.iter(){
+            for (chr, fg, bg) in line.iter(){
                 queue!(stdout(), 
                     style::Print(
                         chr.with(style::Color::Rgb{
                             r: fg.0,
                             g: fg.1,
                             b: fg.2
+                        })
+                        .on(style::Color::Rgb{
+                            r: bg.0,
+                            g: bg.1,
+                            b: bg.2
                         })
                     )
                 ).ok();
@@ -121,12 +127,12 @@ impl System for CMDRenderer{
 }
 impl CMDRenderer{
     #[inline(always)]
-    fn plot(&mut self, x: usize, y: usize, chr: char, fg: CMDColor){
+    fn plot(&mut self, x: usize, y: usize, chr: char, fg: CMDColor, bg: CMDColor){
         if (x, y) > self.size{ return }
-        self.buffer[x + y*self.size.0] = (chr, fg);
+        self.buffer[x + y*self.size.0] = (chr, fg, bg);
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
-    fn draw_line(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor){
+    fn draw_line(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
 
@@ -142,7 +148,7 @@ impl CMDRenderer{
             let mut y = start.1;
 
             for x in start.0..=end.0{
-                self.plot(x, y, chr, fg);
+                self.plot(x, y, chr, fg, bg);
 
                 err -= delta_y;
 
@@ -163,7 +169,7 @@ impl CMDRenderer{
             let mut x = start.0;
 
             for y in start.1..=end.1{
-                self.plot(x, y, chr, fg);
+                self.plot(x, y, chr, fg, bg);
 
                 err -= delta_x;
 
@@ -174,31 +180,31 @@ impl CMDRenderer{
             }
         }
     }
-    fn write_sequence(&mut self, pos: CMDCoords, text: &str, fg: CMDColor){
+    fn write_sequence(&mut self, pos: CMDCoords, text: &str, fg: CMDColor, bg: CMDColor){
         for (offset, chr) in text.char_indices(){
-            self.plot(pos.0 + offset, pos.1, chr, fg);
+            self.plot(pos.0 + offset, pos.1, chr, fg, bg);
         }
     }
-    fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor){
+    fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for x in tr.0..=bl.0{
             for y in tr.1..=bl.1{
-                self.plot(x, y, chr, fg);
+                self.plot(x, y, chr, fg, bg);
             }
         }
     }
-    fn draw_box(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor){
+    fn draw_box(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for y in [tr.1, bl.1]{
             for x in tr.0..=bl.0{
-                self.plot(x, y, chr, fg);
+                self.plot(x, y, chr, fg, bg);
             }
         }
         for x in [tr.0, bl.0]{
             for y in tr.1..=bl.1{
-                self.plot(x, y, chr, fg);
+                self.plot(x, y, chr, fg, bg);
             }
         }
     }
