@@ -40,10 +40,13 @@ const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     size: CMDCoords,
+last_check_frame: u64,
+    last_logic_frame: u64,
+    last_frames: u64
 }
 
 impl System for CMDRenderer{
-    type Data<'a> = ();
+    type Data<'a> = &'a DeltaT;
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
 
@@ -51,6 +54,9 @@ impl System for CMDRenderer{
         Self{
             buffer: Vec::new(),
             size: (100, 20),
+            last_check_frame: 0,
+            last_logic_frame: 0,
+            last_frames: 1
         }
     }
 
@@ -60,6 +66,8 @@ impl System for CMDRenderer{
         use std::io::{stdout, Write};
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
+
+        let profile_start = std::time::Instant::now();
 
         let cmd_size = match terminal::size(){
             Ok(size) => {
@@ -118,7 +126,12 @@ impl System for CMDRenderer{
                 ]
         );
 
-        execute!(stdout(), cursor::MoveTo(0, 0)).ok();
+        if self.last_logic_frame != _data.logic_frame() && _data.logic_frame() % 20 == 0 {
+            self.last_frames = _data.frame() - self.last_check_frame;
+            self.last_check_frame = _data.frame();
+            self.last_logic_frame = _data.logic_frame();
+        }
+        self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         for line in self.buffer.chunks(self.size.0){
             for (chr, fg, bg) in line.iter(){
