@@ -40,6 +40,7 @@ const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     size: CMDCoords,
+    
     last_check_frame: u64,
     last_logic_frame: u64,
     last_frames: u64
@@ -61,7 +62,7 @@ impl System for CMDRenderer{
     }
 
     fn execute(&mut self, _data: Request<'_, Self::Data<'_>>) {
-        use crossterm::{cursor, style::{self, Stylize}, terminal};
+        use crossterm::{cursor, style, terminal};
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
 
@@ -75,7 +76,7 @@ impl System for CMDRenderer{
                 (size.0 as usize, size.1 as usize)
             },
             Err(_) => {
-                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (32, 18). Resize your terminal accordingly");
+                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (100, 20). Resize your terminal accordingly");
                 std::thread::sleep(std::time::Duration::from_secs(5));
                 (100, 20)
             },
@@ -142,18 +143,17 @@ impl System for CMDRenderer{
 
         for (chr, fg, bg) in self.buffer.iter(){
             queue!(lock, 
-                style::Print(
-                    chr.with(style::Color::Rgb{
+                style::SetForegroundColor(style::Color::Rgb{
                         r: fg.0,
                         g: fg.1,
                         b: fg.2
-                    })
-                    .on(style::Color::Rgb{
+                    }),
+                style::SetBackgroundColor(style::Color::Rgb{
                         r: bg.0,
                         g: bg.1,
                         b: bg.2
-                    })
-                )
+                    }),
+                style::Print(chr)
             ).ok();
         };
         lock.flush().ok();
