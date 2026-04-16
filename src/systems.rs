@@ -32,9 +32,7 @@ impl System for CMDInputGetter{
 }
 
 /// Screenspace coords
-type CMDSSCoords = (usize, usize);
-/// Clipspace coords
-type CMDCSCoords = (isize, isize);
+type SSCoords = (isize, isize);
 /// (R, G, B)
 type CMDColor = (u8, u8, u8);
 
@@ -98,28 +96,28 @@ impl System for CMDRenderer{
         self.clear_buffer();
 
         // Criss/cross lines
-        self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', (255, 0, 0), CMD_BG_DEFAULT);
-        self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
+        self.draw_line((0, 0), (self.size.0 as isize - 1, self.size.1 as isize - 1), '■', (255, 0, 0), CMD_BG_DEFAULT);
+        self.draw_line((0, self.size.1 as isize - 1), (self.size.0 as isize - 1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Corner markings
         self.plot(0, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(self.size.0 - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(0, self.size.1 - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(self.size.0 - 1, self.size.1 - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(self.size.0 as isize - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(0, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot(self.size.0 as isize - 1, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Middle Boxes
         {
-            let third = (self.size.0 / 3, self.size.1 / 3);
-            self.draw_rect(third, (self.size.0 - third.0, self.size.1 - third.1), '#', CMD_FG_DEFAULT, (0, 0, 255));
+            let third = (self.size.0 as isize / 3, self.size.1 as isize / 3);
+            self.draw_rect(third, (third.0 * 2, third.1 * 2), '#', CMD_FG_DEFAULT, (0, 0, 255));
 
-            self.draw_box((third.0 - 2, third.1 - 2), (self.size.0 - third.0 + 2, self.size.1 - third.1 + 2), '=', CMD_FG_DEFAULT, (0, 0, 255));
+            self.draw_box((third.0 - 2, third.1 - 2), (third.0 * 2 + 2, third.1 * 2 + 2), '=', CMD_FG_DEFAULT, (0, 0, 255));
         }
 
         // Boundary border
-        self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.draw_box((1, 1), ((self.size.0 - 2) as isize, (self.size.1 - 2) as isize), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Sprite
-        self.draw_sprite((10, 10), 
+        self.draw_sprite((-2, 10), 
         &comp::CMDSprite{
             size_x: 6,
             size_y: 3,
@@ -152,7 +150,7 @@ impl System for CMDRenderer{
         // Debug text
         self.write_text((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         self.draw_sequence(
-            (self.size.0 / 2, self.size.1 / 2), 
+            (self.size.0 as isize / 2, self.size.1 as isize / 2), 
             &[
                 ('H', (255, 0, 0), (0, 255, 255)),
                 ('e', (255, 128, 0), (0, 128, 255)),
@@ -216,12 +214,12 @@ impl CMDRenderer{
         self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
     }
     #[inline(always)]
-    fn plot(&mut self, x: usize, y: usize, chr: char, fg: CMDColor, bg: CMDColor){
-        if (x, y) > self.size{ return }
-        self.buffer[x + y*self.size.0] = (chr, fg, bg);
+    fn plot(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
+        if (x as usize, y as usize) > self.size{ return }
+        self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
-    fn draw_line(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
 
@@ -269,17 +267,17 @@ impl CMDRenderer{
             }
         }
     }
-    fn write_text(&mut self, pos: CMDSSCoords, text: &str, fg: CMDColor, bg: CMDColor){
+    fn write_text(&mut self, pos: SSCoords, text: &str, fg: CMDColor, bg: CMDColor){
         for (offset, chr) in text.char_indices(){
-            self.plot(pos.0 + offset, pos.1, chr, fg, bg);
+            self.plot(pos.0 + offset as isize, pos.1, chr, fg, bg);
         }
     }
-    fn draw_sequence(&mut self, pos: CMDSSCoords, sequence: &[(char, CMDColor, CMDColor)]){
+    fn draw_sequence(&mut self, pos: SSCoords, sequence: &[(char, CMDColor, CMDColor)]){
         for (offset, (chr, fg, bg)) in sequence.iter().enumerate(){
-            self.plot(pos.0 + offset, pos.1, *chr, *fg, *bg);
+            self.plot(pos.0 + offset as isize, pos.1, *chr, *fg, *bg);
         }
     }
-    fn draw_rect(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_rect(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for x in tr.0..=bl.0{
@@ -288,7 +286,7 @@ impl CMDRenderer{
             }
         }
     }
-    fn draw_box(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_box(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for y in [tr.1, bl.1]{
@@ -302,10 +300,10 @@ impl CMDRenderer{
             }
         }
     }
-    fn draw_sprite(&mut self, pos: CMDSSCoords, sprite: &comp::CMDSprite){
+    fn draw_sprite(&mut self, pos: SSCoords, sprite: &comp::CMDSprite){
         for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
             for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
-                self.plot(pos.0 + x_offset, pos.1 + y_offset, *chr, *fg, *bg);
+                self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
             }
         }
     }
