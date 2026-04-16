@@ -118,6 +118,37 @@ impl System for CMDRenderer{
         // Boundary border
         self.draw_box((1, 1), (self.size.0 - 2, self.size.1 - 2), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
+        // Sprite
+        self.draw_sprite((10, 10), 
+        &comp::CMDSprite{
+            size_x: 6,
+            size_y: 3,
+            z_index: 0,
+            data: vec![
+                ('%', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                ('%', (255, 255, 255), (255, 0, 0)),
+                
+                ('#', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                ('#', (255, 255, 255), (0, 255, 0)),
+
+                ('&', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                ('&', (255, 255, 255), (0, 0, 255)),
+
+            ],
+        });
+
         // Debug text
         self.write_text((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         self.draw_sequence(
@@ -268,6 +299,13 @@ impl CMDRenderer{
         for x in [tr.0, bl.0]{
             for y in tr.1..=bl.1{
                 self.plot(x, y, chr, fg, bg);
+            }
+        }
+    }
+    fn draw_sprite(&mut self, pos: CMDSSCoords, sprite: &comp::CMDSprite){
+        for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
+            for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
+                self.plot(pos.0 + x_offset, pos.1 + y_offset, *chr, *fg, *bg);
             }
         }
     }
