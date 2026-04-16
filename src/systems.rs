@@ -95,6 +95,8 @@ impl System for CMDRenderer{
             self.size = cmd_size;
         }
 
+        self.clear_buffer();
+
         // Criss/cross lines
         self.draw_line((0, 0), (self.size.0-1, self.size.1-1), '■', (255, 0, 0), CMD_BG_DEFAULT);
         self.draw_line((0, self.size.1-1), (self.size.0-1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
@@ -179,6 +181,9 @@ impl System for CMDRenderer{
     }
 }
 impl CMDRenderer{
+    fn clear_buffer(&mut self){
+        self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
+    }
     #[inline(always)]
     fn plot(&mut self, x: usize, y: usize, chr: char, fg: CMDColor, bg: CMDColor){
         if (x, y) > self.size{ return }
