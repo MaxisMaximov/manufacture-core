@@ -148,20 +148,31 @@ impl System for CMDRenderer{
 
         execute!(lock, cursor::MoveTo(0, 0)).ok();
 
+        let mut last = (CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         for (chr, fg, bg) in self.buffer.iter(){
-            queue!(lock, 
-                style::SetForegroundColor(style::Color::Rgb{
+            if *fg != last.0{
+                queue!(lock,
+                    style::SetForegroundColor(style::Color::Rgb{
                         r: fg.0,
                         g: fg.1,
                         b: fg.2
-                    }),
-                style::SetBackgroundColor(style::Color::Rgb{
+                    })
+                ).ok();
+                last.0 = *fg;
+            }
+
+            if *bg != last.1{
+                queue!(lock,
+                    style::SetBackgroundColor(style::Color::Rgb{
                         r: bg.0,
                         g: bg.1,
                         b: bg.2
-                    }),
-                style::Print(chr)
-            ).ok();
+                    })
+                ).ok();
+                last.1 = *bg;
+            }
+
+            queue!(lock, style::Print(chr)).ok();
         };
         lock.flush().ok();
         drop(lock)
