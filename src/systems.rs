@@ -31,15 +31,22 @@ impl System for CMDInputGetter{
     }
 }
 
-
-type CMDCoords = (usize, usize);
+/// Screenspace coords
+type CMDSSCoords = (usize, usize);
+/// Clipspace coords
+type CMDCSCoords = (isize, isize);
+/// (R, G, B)
 type CMDColor = (u8, u8, u8);
+
+const CMD_CHR_DEFAULT: char = ' ';
 const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);
 const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
+const CMD_CELL_DEFAULT: (char, CMDColor, CMDColor) = (CMD_CHR_DEFAULT, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+const CMD_SIZE_DEFAULT: (usize, usize) = (100, 20);
 
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
-    size: CMDCoords,
+    size: (usize, usize),
     
     last_check_frame: u64,
     last_logic_frame: u64,
@@ -53,8 +60,8 @@ impl System for CMDRenderer{
 
     fn new() -> Self {
         Self{
-            buffer: Vec::new(),
-            size: (100, 20),
+            buffer: vec![CMD_CELL_DEFAULT; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
+            size: CMD_SIZE_DEFAULT,
             last_check_frame: 0,
             last_logic_frame: 0,
             last_frames: 1
@@ -76,15 +83,15 @@ impl System for CMDRenderer{
                 (size.0 as usize, size.1 as usize)
             },
             Err(_) => {
-                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to (100, 20). Resize your terminal accordingly");
+                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to {:?}. Resize your terminal accordingly", CMD_SIZE_DEFAULT);
                 std::thread::sleep(std::time::Duration::from_secs(5));
-                (100, 20)
+                CMD_SIZE_DEFAULT
             },
         };
 
         // Here to prevent unnecessary memory changes
         if self.size != cmd_size{
-            self.buffer = vec![(' ', CMD_FG_DEFAULT, CMD_BG_DEFAULT); cmd_size.0 * cmd_size.1];
+            self.buffer.resize(cmd_size.0 * cmd_size.1, CMD_CELL_DEFAULT);
             self.size = cmd_size;
         }
 
@@ -167,7 +174,7 @@ impl CMDRenderer{
         self.buffer[x + y*self.size.0] = (chr, fg, bg);
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
-    fn draw_line(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_line(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
 
@@ -215,17 +222,17 @@ impl CMDRenderer{
             }
         }
     }
-    fn write_text(&mut self, pos: CMDCoords, text: &str, fg: CMDColor, bg: CMDColor){
+    fn write_text(&mut self, pos: CMDSSCoords, text: &str, fg: CMDColor, bg: CMDColor){
         for (offset, chr) in text.char_indices(){
             self.plot(pos.0 + offset, pos.1, chr, fg, bg);
         }
     }
-    fn draw_sequence(&mut self, pos: CMDCoords, sequence: &[(char, CMDColor, CMDColor)]){
+    fn draw_sequence(&mut self, pos: CMDSSCoords, sequence: &[(char, CMDColor, CMDColor)]){
         for (offset, (chr, fg, bg)) in sequence.iter().enumerate(){
             self.plot(pos.0 + offset, pos.1, *chr, *fg, *bg);
         }
     }
-    fn draw_rect(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_rect(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for x in tr.0..=bl.0{
@@ -234,7 +241,7 @@ impl CMDRenderer{
             }
         }
     }
-    fn draw_box(&mut self, a: CMDCoords, b: CMDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_box(&mut self, a: CMDSSCoords, b: CMDSSCoords, chr: char, fg: CMDColor, bg: CMDColor){
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for y in [tr.1, bl.1]{
