@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use super::*;
 use resources::*;
 
@@ -46,9 +48,7 @@ pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     size: (usize, usize),
     
-    last_check_frame: u64,
-    last_logic_frame: u64,
-    last_frames: u64
+    profiler: CMDRendererProfiler
 }
 
 impl System for CMDRenderer{
@@ -60,9 +60,8 @@ impl System for CMDRenderer{
         Self{
             buffer: vec![CMD_CELL_DEFAULT; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             size: CMD_SIZE_DEFAULT,
-            last_check_frame: 0,
-            last_logic_frame: 0,
-            last_frames: 1
+            
+            profiler: CMDRendererProfiler::new()
         }
     }
 
@@ -73,7 +72,7 @@ impl System for CMDRenderer{
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
-        let profile_start = std::time::Instant::now();
+        self.profiler.start_frame_profile();
         let mut lock = stdout().lock();
 
         let cmd_size = match terminal::size(){
@@ -166,16 +165,13 @@ impl System for CMDRenderer{
                 ]
         );
 
-        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", _data.frame(), _data.logic_frame(), self.last_check_frame, _data.frame() - self.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", _data.frame(), _data.logic_frame(), self.profiler.last_check_frame, _data.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
-        if self.last_logic_frame != _data.logic_frame() && _data.logic_frame() % 20 == 0 {
-            self.last_frames = _data.frame() - self.last_check_frame;
-            self.last_check_frame = _data.frame();
-            self.last_logic_frame = _data.logic_frame();
-        }
-        self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.profiler.update(_data.frame(), _data.logic_frame());
+
+        self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.profiler.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         
-        self.write_text((3, 6), &format!("DEBUG: Debug frame processing took: {:?}", profile_start.elapsed()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((3, 6), &format!("DEBUG: Debug frame processing took: {:?}", self.profiler.stop_frame_profile()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         execute!(lock, cursor::MoveTo(0, 0)).ok();
 
@@ -215,6 +211,7 @@ impl CMDRenderer{
     }
     #[inline(always)]
     fn plot(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
+        // Negative `isize` cast to `usize` is always bigger than 0
         if (x as usize, y as usize) > self.size{ return }
         self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
     }
@@ -306,5 +303,42 @@ impl CMDRenderer{
                 self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
             }
         }
+    }
+}
+
+/// # CMD Renderer Profiler
+/// A rudimentary struct made to neatly contain the profilign information for the renderer
+/// 
+/// By default it's disabled, compile with Debug flag to enable
+/// 
+/// TODO: Make it toggleable at runtime
+struct CMDRendererProfiler{
+    frame_profile_start: Instant,
+    last_check_frame: u64,
+    last_logic_frame: u64,
+    last_frames: u64
+}
+impl CMDRendererProfiler{
+    fn new() -> Self{
+        Self{
+            frame_profile_start: Instant::now(),
+            last_check_frame: 0,
+            last_logic_frame: 0,
+            last_frames: 1
+        }
+    }
+    fn start_frame_profile(&mut self){
+        self.frame_profile_start = Instant::now();
+    }
+    fn stop_frame_profile(&self) -> std::time::Duration{
+        self.frame_profile_start.elapsed()
+    }
+    fn update(&mut self, frame: u64, logic: u64){
+        if !(self.last_logic_frame != logic && logic % 20 == 0) {
+            return;
+        }
+        self.last_frames = frame - self.last_check_frame;
+        self.last_check_frame = frame;
+        self.last_logic_frame = logic;
     }
 }
