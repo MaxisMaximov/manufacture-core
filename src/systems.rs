@@ -165,6 +165,13 @@ impl System for CMDRenderer{
                 ]
         );
 
+        self.write_text(
+            (10, 8), 
+            "Hello\nWorld", 
+            CMD_FG_DEFAULT, 
+            CMD_BG_DEFAULT
+        );
+
         self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", _data.frame(), _data.logic_frame(), self.profiler.last_check_frame, _data.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         self.profiler.update(_data.frame(), _data.logic_frame());
@@ -173,6 +180,7 @@ impl System for CMDRenderer{
         
         self.write_text((3, 6), &format!("DEBUG: Debug frame processing took: {:?}", self.profiler.stop_frame_profile()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
+        // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
 
         let mut last = (CMD_FG_DEFAULT, CMD_BG_DEFAULT);
@@ -265,13 +273,15 @@ impl CMDRenderer{
         }
     }
     fn write_text(&mut self, pos: SSCoords, text: &str, fg: CMDColor, bg: CMDColor){
-        for (offset, chr) in text.char_indices(){
-            self.plot(pos.0 + offset as isize, pos.1, chr, fg, bg);
+        for (y_offset, line) in text.lines().enumerate(){
+            for (x_offset, chr) in line.char_indices(){
+                self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
+            }
         }
     }
     fn draw_sequence(&mut self, pos: SSCoords, sequence: &[(char, CMDColor, CMDColor)]){
-        for (offset, (chr, fg, bg)) in sequence.iter().enumerate(){
-            self.plot(pos.0 + offset as isize, pos.1, *chr, *fg, *bg);
+        for (x_offset, (chr, fg, bg)) in sequence.iter().enumerate(){
+            self.plot(pos.0 + x_offset as isize, pos.1, *chr, *fg, *bg);
         }
     }
     fn draw_rect(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
