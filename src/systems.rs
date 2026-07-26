@@ -94,6 +94,8 @@ impl System for CMDRenderer{
 
         self.clear_buffer();
 
+        // -- DEBUG RENDERS --
+
         // Criss/cross lines
         self.draw_line((0, 0), (self.size.0 as isize - 1, self.size.1 as isize - 1), '■', (255, 0, 0), CMD_BG_DEFAULT);
         self.draw_line((0, self.size.1 as isize - 1), (self.size.0 as isize - 1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
@@ -220,11 +222,19 @@ impl CMDRenderer{
     #[inline(always)]
     fn plot(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
-        if (x as usize, y as usize) > self.size{ return }
+        // `self.size` is an EX-clusive range
+        if (x as usize, y as usize) >= self.size{ return }
         self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
+    }
+    fn bounds_check(&self, a: SSCoords, b: SSCoords) -> bool{
+        // If either of the coords is inside the bounds, it's fine
+        (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+        
+        if !self.bounds_check(a, b){ return }
+
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
 
@@ -273,6 +283,9 @@ impl CMDRenderer{
         }
     }
     fn write_text(&mut self, pos: SSCoords, text: &str, fg: CMDColor, bg: CMDColor){
+        // We only check the `pos`, all text happens lower down
+        if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
+
         for (y_offset, line) in text.lines().enumerate(){
             for (x_offset, chr) in line.char_indices(){
                 self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
@@ -280,11 +293,17 @@ impl CMDRenderer{
         }
     }
     fn draw_sequence(&mut self, pos: SSCoords, sequence: &[(char, CMDColor, CMDColor)]){
+        // We only check the `pos`, all text happens lower down
+        if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
+
         for (x_offset, (chr, fg, bg)) in sequence.iter().enumerate(){
             self.plot(pos.0 + x_offset as isize, pos.1, *chr, *fg, *bg);
         }
     }
     fn draw_rect(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+
+        if !self.bounds_check(a, b){ return }
+
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for x in tr.0..=bl.0{
@@ -294,6 +313,9 @@ impl CMDRenderer{
         }
     }
     fn draw_box(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+
+        if !self.bounds_check(a, b){ return }
+        
         let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
 
         for y in [tr.1, bl.1]{
@@ -308,6 +330,9 @@ impl CMDRenderer{
         }
     }
     fn draw_sprite(&mut self, pos: SSCoords, sprite: &comp::CMDSprite){
+
+        if !self.bounds_check(pos, (pos.0 + sprite.size_x as isize, pos.1 + sprite.size_y as isize)){ return }
+        
         for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
             for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
                 self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
