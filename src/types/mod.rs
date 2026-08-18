@@ -53,3 +53,40 @@ pub trait EntityPrefab{
 pub type SSCoords = (isize, isize);
 /// (R, G, B)
 pub type CMDColor = (u8, u8, u8);
+
+pub enum CMDRenderCommand<'a>{
+    DrawLine{
+        a: SSCoords,
+        b: SSCoords,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor},
+    WriteText{
+        pos: SSCoords,
+        text: &'a str,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    DrawSequence{
+        pos: SSCoords,
+        sequence: &'a[(char, CMDColor, CMDColor)]
+    },
+    DrawRect{
+        a: SSCoords,
+        b: SSCoords,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    DrawBox{
+        a: SSCoords,
+        b: SSCoords,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    DrawSprite{
+        pos: SSCoords,
+        sprite_id: usize
+    }
+}
