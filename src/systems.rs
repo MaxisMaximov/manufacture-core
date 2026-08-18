@@ -7,7 +7,7 @@ use resources::*;
 /// Acquires the current pressed key from the Command Line
 /// 
 /// Note: Some terminals may put `Press` and `Hold` events
-/// at the same timewhen you press a key
+/// at the same time when you press a key
 /// 
 /// Note: Holding a key in Raw Mode floods the input buffer
 /// and may prevent the Handler from reading other keys

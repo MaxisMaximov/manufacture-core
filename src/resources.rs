@@ -1,4 +1,5 @@
 use super::*;
+use types::*;
 
 pub use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
 /// # User input -- CMD
@@ -30,6 +31,23 @@ impl Resource for CMDInput{
     fn new() -> Self {
         Self{
             key: KeyEvent::new(KeyCode::Null, KeyModifiers::NONE),
+        }
+    }
+}
+
+/// # CMDRenderer Camera
+/// Hold the position of the camera for `CMDRenderer`
+/// 
+/// Note: Multiple cameras are unsupported right now
+pub struct CMDCamera{
+    pub pos: Vector2
+}
+impl Resource for CMDCamera{
+    const ID: &'static str = "CMDCamera";
+
+    fn new() -> Self {
+        Self{
+            pos: Vector2 { x: 0.0, y: 0.0 },
         }
     }
 }
