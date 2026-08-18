@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use super::*;
 use resources::*;
+use types::*;
 
 /// # Command Line Input Handler
 /// Acquires the current pressed key from the Command Line
@@ -32,11 +33,6 @@ impl System for CMDInputGetter{
         }
     }
 }
-
-/// Screenspace coords
-type SSCoords = (isize, isize);
-/// (R, G, B)
-type CMDColor = (u8, u8, u8);
 
 const CMD_CHR_DEFAULT: char = ' ';
 const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);

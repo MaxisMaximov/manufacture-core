@@ -48,3 +48,8 @@ pub trait EntityPrefab{
     const ID: &'static str = "idkfa";
     fn spawn(&self, builder: EntityBuilder<'_>);
 }
+
+/// Screenspace coords
+pub type SSCoords = (isize, isize);
+/// (R, G, B)
+pub type CMDColor = (u8, u8, u8);
