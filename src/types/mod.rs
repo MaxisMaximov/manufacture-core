@@ -54,7 +54,7 @@ pub type SSCoords = (isize, isize);
 /// (R, G, B)
 pub type CMDColor = (u8, u8, u8);
 
-pub enum CMDRenderCommand<'a>{
+pub enum CMDRenderCommand{
     DrawLine{
         a: SSCoords,
         b: SSCoords,
@@ -63,13 +63,13 @@ pub enum CMDRenderCommand<'a>{
         bg: CMDColor},
     WriteText{
         pos: SSCoords,
-        text: &'a str,
+        text: String,
         fg: CMDColor,
         bg: CMDColor
     },
     DrawSequence{
         pos: SSCoords,
-        sequence: &'a[(char, CMDColor, CMDColor)]
+        sequence: Vec<(char, CMDColor, CMDColor)>
     },
     DrawRect{
         a: SSCoords,
@@ -87,6 +87,12 @@ pub enum CMDRenderCommand<'a>{
     },
     DrawSprite{
         pos: SSCoords,
-        sprite_id: usize
+        sprite_id: &'static str
     }
+}
+
+pub struct ASCIIImage{
+    pub size_x: u8,
+    pub size_y: u8,
+    pub data: Vec<(char, (u8, u8, u8), (u8, u8, u8))> // Symbol, Foreground RGB, Background RGB
 }
