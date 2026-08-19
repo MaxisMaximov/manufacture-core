@@ -98,10 +98,8 @@ pub trait Tag{
 /// 
 /// TODO: Add varying origin point
 pub struct CMDSprite{
-    pub size_x: u8,
-    pub size_y: u8,
+    pub id: &'static str,
     pub z_index: u16,
-    pub data: Vec<(char, (u8, u8, u8), (u8, u8, u8))> // Symbol, Foreground RGB, Background RGB
 }
 impl Component for CMDSprite{
     type STORAGE = HashMapStorage<Self>;

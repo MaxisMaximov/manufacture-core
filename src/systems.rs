@@ -115,10 +115,9 @@ impl System for CMDRenderer{
 
         // Sprite
         self.draw_sprite((-2, 10), 
-        &comp::CMDSprite{
+        &types::ASCIIImage{
             size_x: 6,
             size_y: 3,
-            z_index: 0,
             data: vec![
                 ('%', (255, 255, 255), (255, 0, 0)),
                 (' ', (255, 255, 255), (255, 0, 0)),
@@ -325,7 +324,7 @@ impl CMDRenderer{
             }
         }
     }
-    fn draw_sprite(&mut self, pos: SSCoords, sprite: &comp::CMDSprite){
+    fn draw_sprite(&mut self, pos: SSCoords, sprite: &types::ASCIIImage){
 
         if !self.bounds_check(pos, (pos.0 + sprite.size_x as isize, pos.1 + sprite.size_y as isize)){ return }
         
