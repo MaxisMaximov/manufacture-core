@@ -80,3 +80,29 @@ impl CMDSpriteRegistry{
         self.inner.get_mut(id)
     }
 }
+
+const CMD_QUEUE_DEFAULT: usize = 32;
+
+pub struct CMDRendererQueue{
+    inner: Vec<CMDRenderCommand>
+}
+impl Resource for CMDRendererQueue{
+    const ID: &'static str = "CMDRendererQueue";
+
+    fn new() -> Self {
+        Self{
+            inner: Vec::with_capacity(CMD_QUEUE_DEFAULT),
+        }
+    }
+}
+impl CMDRendererQueue{
+    pub fn push(&mut self, command: CMDRenderCommand){
+        self.inner.push(command);
+    }
+    pub fn iter(&self) -> std::slice::Iter<'_, CMDRenderCommand>{
+        self.inner.iter()
+    }
+    pub fn clear(&mut self){
+        self.inner.clear();
+    }
+}
