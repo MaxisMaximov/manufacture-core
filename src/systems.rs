@@ -48,7 +48,7 @@ pub struct CMDRenderer{
 }
 
 impl System for CMDRenderer{
-    type Data<'a> = &'a DeltaT;
+    type Data<'a> = (&'a DeltaT, &'a CMDRendererQueue);
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
 
@@ -65,6 +65,11 @@ impl System for CMDRenderer{
         use crossterm::{cursor, style, terminal};
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
+
+        let (
+            delta_t,
+            render_queue
+        ) = _data.into_raw();
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
 
@@ -169,9 +174,9 @@ impl System for CMDRenderer{
             CMD_BG_DEFAULT
         );
 
-        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", _data.frame(), _data.logic_frame(), self.profiler.last_check_frame, _data.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
-        self.profiler.update(_data.frame(), _data.logic_frame());
+        self.profiler.update(delta_t.frame(), delta_t.logic_frame());
 
         self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.profiler.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         
