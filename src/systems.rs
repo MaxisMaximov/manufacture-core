@@ -48,7 +48,7 @@ pub struct CMDRenderer{
 }
 
 impl System for CMDRenderer{
-    type Data<'a> = (&'a DeltaT, &'a CMDRendererQueue);
+    type Data<'a> = (&'a DeltaT, &'a mut CMDRendererQueue, &'a CMDSpriteRegistry);
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
 
@@ -68,7 +68,8 @@ impl System for CMDRenderer{
 
         let (
             delta_t,
-            render_queue
+            mut render_queue,
+            sprite_registry
         ) = _data.into_raw();
 
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
@@ -94,6 +95,22 @@ impl System for CMDRenderer{
         }
 
         self.clear_buffer();
+
+        for cmd in render_queue.iter(){
+            match cmd{
+                CMDRenderCommand::DrawLine { a, b, chr, fg, bg } => self.draw_line(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text(*pos, text, *fg, *bg),
+                CMDRenderCommand::DrawSequence { pos, sequence } => self.draw_sequence(*pos, sequence),
+                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::DrawSprite { pos, sprite_id } => {
+                    if let Some(sprite) = sprite_registry.get(sprite_id) {
+                        self.draw_sprite(*pos, sprite)
+                    }
+                },
+            }
+        }
+        render_queue.clear();
 
         // -- DEBUG RENDERS --
 
