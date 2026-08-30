@@ -55,7 +55,7 @@ impl Resource for CMDCamera{
 }
 
 pub struct CMDSpriteRegistry{
-    inner: HashMap<&'static str, ASCIIImage>
+    inner: HashMap<String, ASCIIImage>
 }
 impl Resource for CMDSpriteRegistry{
     const ID: &'static str = "CMDSpriteRegistry";
@@ -67,16 +67,16 @@ impl Resource for CMDSpriteRegistry{
     }
 }
 impl CMDSpriteRegistry{
-    pub fn register(&mut self, id: &'static str, sprite: ASCIIImage){
+    pub fn register(&mut self, id: String, sprite: ASCIIImage){
         self.inner.insert(id, sprite);
     }
     pub fn unregister(&mut self, id: &'static str){
         self.inner.remove(id);
     }
-    pub fn get(&self, id: &'static str) -> Option<&ASCIIImage>{
+    pub fn get<'a>(&'a self, id: &'a str) -> Option<&'a ASCIIImage>{
         self.inner.get(id)
     }
-    pub fn get_mut(&mut self, id: &'static str) -> Option<&mut ASCIIImage>{
+    pub fn get_mut<'a>(&'a mut self, id: &'a str) -> Option<&'a mut ASCIIImage>{
         self.inner.get_mut(id)
     }
 }

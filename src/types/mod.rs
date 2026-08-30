@@ -87,7 +87,7 @@ pub enum CMDRenderCommand{
     },
     DrawSprite{
         pos: SSCoords,
-        sprite_id: &'static str
+        sprite_id: String
     }
 }
 
