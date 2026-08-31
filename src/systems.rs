@@ -251,9 +251,13 @@ impl CMDRenderer{
         let y = ((pos.1 + 1.0) * 0.5 * self.size.1 as f32) as usize;
         self.buffer[x + y * self.size.0] = (chr, fg, bg);
     }
+    #[deprecated = "Unstable to use, use `inbounds_ndc` instead"]
     fn bounds_check(&self, a: SSCoords, b: SSCoords) -> bool{
         // If either of the coords is inside the bounds, it's fine
         (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
+    }
+    fn inbounds_ndc(&self, pos: NDCoords) -> bool{
+        pos > (-1.0, -1.0) || pos < (1.0, 1.0)
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
