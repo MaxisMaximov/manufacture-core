@@ -237,11 +237,19 @@ impl CMDRenderer{
         self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
     }
     #[inline(always)]
+    #[deprecated = "Unstable to use, use `plot_ndc` instead"]
     fn plot(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
         // `self.size` is an EX-clusive range
         if (x as usize, y as usize) >= self.size{ return }
         self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
+    }
+    fn plot_ndc(&mut self, pos: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+        if pos < (-1.0, -1.0) || pos > (1.0, 1.0){ return }
+        // Shift, correct, and fract(?)
+        let x = ((pos.0 + 1.0) * 0.5 * self.size.0 as f32) as usize;
+        let y = ((pos.1 + 1.0) * 0.5 * self.size.1 as f32) as usize;
+        self.buffer[x + y * self.size.0] = (chr, fg, bg);
     }
     fn bounds_check(&self, a: SSCoords, b: SSCoords) -> bool{
         // If either of the coords is inside the bounds, it's fine
