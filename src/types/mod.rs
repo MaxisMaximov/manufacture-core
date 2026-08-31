@@ -51,6 +51,8 @@ pub trait EntityPrefab{
 
 /// Screenspace coords
 pub type SSCoords = (isize, isize);
+/// Normalized Device Coordinates
+pub type NDCoords = (f32, f32);
 /// (R, G, B)
 pub type CMDColor = (u8, u8, u8);
 
