@@ -311,6 +311,7 @@ impl CMDRenderer{
             }
         }
     }
+    #[deprecated = "Unstable to use, use `write_text_ndc` instead"]
     fn write_text(&mut self, pos: SSCoords, text: &str, fg: CMDColor, bg: CMDColor){
         // We only check the `pos`, all text happens lower down
         if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
@@ -318,6 +319,18 @@ impl CMDRenderer{
         for (y_offset, line) in text.lines().enumerate(){
             for (x_offset, chr) in line.char_indices(){
                 self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
+            }
+        }
+    }
+    fn write_text_ndc(&mut self, pos: NDCoords, text: &str, fg: CMDColor, bg: CMDColor){
+        let char_spacing = 2.0 / self.size.0 as f32;
+        let line_spacing = 2.0 / self.size.1 as f32;
+        
+        for (line_off, line) in text.lines().enumerate(){
+            for (chr_off, chr) in line.char_indices(){
+                let x = pos.0 + chr_off as f32 * char_spacing;
+                let y = pos.1 + line_off as f32 * line_spacing;
+                self.plot_ndc((x, y), chr, fg, bg);
             }
         }
     }
