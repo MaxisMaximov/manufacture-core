@@ -119,10 +119,10 @@ impl System for CMDRenderer{
         self.draw_line((0, self.size.1 as isize - 1), (self.size.0 as isize - 1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Corner markings
-        self.plot(0, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(self.size.0 as isize - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(0, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot(self.size.0 as isize - 1, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot_px(0, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot_px(self.size.0 as isize - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot_px(0, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        self.plot_px(self.size.0 as isize - 1, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
 
         // Middle Boxes
         {
@@ -237,19 +237,18 @@ impl CMDRenderer{
         self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
     }
     #[inline(always)]
-    #[deprecated = "Unstable to use, use `plot_ndc` instead"]
-    fn plot(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
+    fn plot_px(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
         // `self.size` is an EX-clusive range
         if (x as usize, y as usize) >= self.size{ return }
         self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
     }
-    fn plot_ndc(&mut self, pos: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        if pos < (-1.0, -1.0) || pos > (1.0, 1.0){ return }
+    fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
         // Shift, correct, and fract(?)
-        let x = ((pos.0 + 1.0) * 0.5 * self.size.0 as f32) as usize;
-        let y = ((pos.1 + 1.0) * 0.5 * self.size.1 as f32) as usize;
-        self.buffer[x + y * self.size.0] = (chr, fg, bg);
+        let x = ((pos.0 + 1.0) * 0.5 * self.size.0 as f32) as isize;
+        // An additional `* -1` to make -1 = Bottom instead of Top
+        let y = ((pos.1 + 1.0) * -0.5 * self.size.1 as f32) as isize;
+        (x, y)
     }
     #[deprecated = "Unstable to use, use `inbounds_ndc` instead"]
     fn bounds_check(&self, a: SSCoords, b: SSCoords) -> bool{
@@ -279,7 +278,7 @@ impl CMDRenderer{
             let mut y = start.1;
 
             for x in start.0..=end.0{
-                self.plot(x, y, chr, fg, bg);
+                self.plot_px(x, y, chr, fg, bg);
 
                 err -= delta_y;
 
@@ -300,7 +299,7 @@ impl CMDRenderer{
             let mut x = start.0;
 
             for y in start.1..=end.1{
-                self.plot(x, y, chr, fg, bg);
+                self.plot_px(x, y, chr, fg, bg);
 
                 err -= delta_x;
 
@@ -318,30 +317,29 @@ impl CMDRenderer{
 
         for (y_offset, line) in text.lines().enumerate(){
             for (x_offset, chr) in line.char_indices(){
-                self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
+                self.plot_px(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
             }
         }
     }
     fn write_text_ndc(&mut self, pos: NDCoords, text: &str, fg: CMDColor, bg: CMDColor){
-        let char_spacing = 2.0 / self.size.0 as f32;
-        let line_spacing = 2.0 / self.size.1 as f32;
+        let origin = self.ndc_to_ss(pos);
         
         for (line_off, line) in text.lines().enumerate(){
             for (chr_off, chr) in line.char_indices(){
-                let x = pos.0 + chr_off as f32 * char_spacing;
-                let y = pos.1 + line_off as f32 * line_spacing;
-                self.plot_ndc((x, y), chr, fg, bg);
+                self.plot_px(origin.0 + chr_off as isize, origin.1 + line_off as isize, chr, fg, bg);
             }
         }
     }
+    #[deprecated = "Deprecated out of lack of use cases"]
     fn draw_sequence(&mut self, pos: SSCoords, sequence: &[(char, CMDColor, CMDColor)]){
         // We only check the `pos`, all text happens lower down
         if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
 
         for (x_offset, (chr, fg, bg)) in sequence.iter().enumerate(){
-            self.plot(pos.0 + x_offset as isize, pos.1, *chr, *fg, *bg);
+            self.plot_px(pos.0 + x_offset as isize, pos.1, *chr, *fg, *bg);
         }
     }
+    #[deprecated = "Unstable to use, use `draw_rect_ndc` instead"]
     fn draw_rect(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
 
         if !self.bounds_check(a, b){ return }
@@ -350,7 +348,19 @@ impl CMDRenderer{
 
         for x in tr.0..=bl.0{
             for y in tr.1..=bl.1{
-                self.plot(x, y, chr, fg, bg);
+                self.plot_px(x, y, chr, fg, bg);
+            }
+        }
+    }
+    fn draw_rect_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+        if !self.inbounds_ndc(a) || !self.inbounds_ndc(b){ return }
+        // ↘↘
+        let tl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
+        let br = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
+        
+        for x in tl.0..=br.0{
+            for y in tl.1..=br.1{
+                self.plot_px(x, y, chr, fg, bg);
             }
         }
     }
@@ -362,12 +372,12 @@ impl CMDRenderer{
 
         for y in [tr.1, bl.1]{
             for x in tr.0..=bl.0{
-                self.plot(x, y, chr, fg, bg);
+                self.plot_px(x, y, chr, fg, bg);
             }
         }
         for x in [tr.0, bl.0]{
             for y in tr.1..=bl.1{
-                self.plot(x, y, chr, fg, bg);
+                self.plot_px(x, y, chr, fg, bg);
             }
         }
     }
@@ -377,7 +387,7 @@ impl CMDRenderer{
         
         for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
             for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
-                self.plot(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
+                self.plot_px(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
             }
         }
     }

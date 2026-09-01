@@ -50,6 +50,7 @@ pub trait EntityPrefab{
 }
 
 /// Screenspace coords
+/// `isize` instead of `usize` to prevent Underflow warnings without much additional code
 pub type SSCoords = (isize, isize);
 /// Normalized Device Coordinates
 pub type NDCoords = (f32, f32);
