@@ -399,6 +399,7 @@ impl CMDRenderer{
             }
         }
     }
+    #[deprecated = "Unstable to use, use `draw_sprite_ndc` instead"]
     fn draw_sprite(&mut self, pos: SSCoords, sprite: &types::ASCIIImage){
 
         if !self.bounds_check(pos, (pos.0 + sprite.size_x as isize, pos.1 + sprite.size_y as isize)){ return }
@@ -406,6 +407,15 @@ impl CMDRenderer{
         for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
             for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
                 self.plot_px(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
+            }
+        }
+    }
+    fn draw_sprite_ndc(&mut self, pos: NDCoords, sprite: &types::ASCIIImage){
+        let ss_pos = self.ndc_to_ss(pos);
+
+        for (y_off, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
+            for (x_off, px) in row.iter().enumerate(){
+                self.plot_px(ss_pos.0 + x_off as isize, ss_pos.1 + y_off as isize, px.0, px.1, px.2);
             }
         }
     }
