@@ -256,7 +256,7 @@ impl CMDRenderer{
         (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
     }
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
-        pos > (-1.0, -1.0) || pos < (1.0, 1.0)
+        pos >= (-1.0, -1.0) || pos <= (1.0, 1.0)
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
@@ -364,6 +364,7 @@ impl CMDRenderer{
             }
         }
     }
+    #[deprecated = "Unstable to use, use `draw_box_ndc` instead"]
     fn draw_box(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
 
         if !self.bounds_check(a, b){ return }
@@ -377,6 +378,23 @@ impl CMDRenderer{
         }
         for x in [tr.0, bl.0]{
             for y in tr.1..=bl.1{
+                self.plot_px(x, y, chr, fg, bg);
+            }
+        }
+    }
+    fn draw_box_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+        if !self.inbounds_ndc(a) || !self.inbounds_ndc(b){ return }
+
+        let tl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
+        let br = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
+
+        for x in [tl.0, br.0]{
+            for y in tl.1..=br.1{
+                self.plot_px(x, y, chr, fg, bg);
+            }
+        }
+        for y in [tl.1, br.1]{
+            for x in tl.0..=br.0{
                 self.plot_px(x, y, chr, fg, bg);
             }
         }
