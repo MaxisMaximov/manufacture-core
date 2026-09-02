@@ -115,28 +115,32 @@ impl System for CMDRenderer{
         // -- DEBUG RENDERS --
 
         // Criss/cross lines
-        self.draw_line((0, 0), (self.size.0 as isize - 1, self.size.1 as isize - 1), '■', (255, 0, 0), CMD_BG_DEFAULT);
-        self.draw_line((0, self.size.1 as isize - 1), (self.size.0 as isize - 1, 0), '■', (255, 0, 0), CMD_BG_DEFAULT);
+        {
+            let bl = self.ndc_to_ss((-1.0, -1.0));
+            let tr = self.ndc_to_ss((1.0, 1.0));
+            self.draw_line((bl.0, tr.1), (tr.0, bl.1), '■', (255, 0, 0), CMD_BG_DEFAULT);
+            self.draw_line(bl, tr, '■', (255, 0, 0), CMD_BG_DEFAULT);
 
-        // Corner markings
-        self.plot_px(0, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot_px(self.size.0 as isize - 1, 0, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot_px(0, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
-        self.plot_px(self.size.0 as isize - 1, self.size.1 as isize - 1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+            // Corner markings
+            self.plot_px(bl.0, tr.1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+            self.plot_px(tr.0, bl.1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+            self.plot_px(bl.0, bl.1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+            self.plot_px(tr.0, tr.1, '#', (255, 0, 0), CMD_BG_DEFAULT);
+        }
+
 
         // Middle Boxes
         {
-            let third = (self.size.0 as isize / 3, self.size.1 as isize / 3);
-            self.draw_rect(third, (third.0 * 2, third.1 * 2), '#', CMD_FG_DEFAULT, (0, 0, 255));
+            self.draw_rect_ndc((-0.333, -0.333), (0.333, 0.333), '#', CMD_FG_DEFAULT, (0, 0, 255));
 
-            self.draw_box((third.0 - 2, third.1 - 2), (third.0 * 2 + 2, third.1 * 2 + 2), '=', CMD_FG_DEFAULT, (0, 0, 255));
+            self.draw_box_ndc((-0.4, -0.4), (0.4, 0.4), '=', CMD_FG_DEFAULT, (0, 0, 255));
         }
 
         // Boundary border
-        self.draw_box((1, 1), ((self.size.0 - 2) as isize, (self.size.1 - 2) as isize), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.draw_box_ndc((-1.0, -1.0), (1.0, 1.0), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // Sprite
-        self.draw_sprite((-2, 10), 
+        self.draw_sprite_ndc((-1.2, 0.0), 
         &types::ASCIIImage{
             size_x: 6,
             size_y: 3,
@@ -166,38 +170,22 @@ impl System for CMDRenderer{
         });
 
         // Debug text
-        self.write_text((3, 3), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-        self.draw_sequence(
-            (self.size.0 as isize / 2, self.size.1 as isize / 2), 
-            &[
-                ('H', (255, 0, 0), (0, 255, 255)),
-                ('e', (255, 128, 0), (0, 128, 255)),
-                ('l', (255, 255, 0), (0, 0, 255)),
-                ('l', (128, 255, 0), (128, 0, 255)),
-                ('o', (0, 255, 0), (255, 0, 255)),
-                (' ', CMD_FG_DEFAULT, (255, 0, 128)),
-                ('W', (0, 255, 255), (255, 0, 0)),
-                ('o', (0, 128, 255), (255, 128, 0)),
-                ('r', (0, 0, 255), (255, 255, 0)),
-                ('l', (128, 0, 255), (128, 255, 0)),
-                ('d', (255, 0, 255), (0, 255, 0)),
-                ]
-        );
+        self.write_text_ndc((-0.9, 0.9), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
-        self.write_text(
-            (10, 8), 
+        self.write_text_ndc(
+            (-0.2, 0.0), 
             "Hello\nWorld", 
             CMD_FG_DEFAULT, 
             CMD_BG_DEFAULT
         );
 
-        self.write_text((3, 4), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text_ndc((-0.9, 0.8), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         self.profiler.update(delta_t.frame(), delta_t.logic_frame());
 
-        self.write_text((3, 5), &format!("DEBUG: Estimated FPS: {:?}", self.profiler.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text_ndc((-0.9, 0.7), &format!("DEBUG: Estimated FPS: {:?}", self.profiler.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         
-        self.write_text((3, 6), &format!("DEBUG: Debug frame processing took: {:?}", self.profiler.stop_frame_profile()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text_ndc((-0.9, 0.6), &format!("DEBUG: Debug frame processing took: {:?}", self.profiler.stop_frame_profile()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
