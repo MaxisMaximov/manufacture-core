@@ -59,37 +59,38 @@ pub type CMDColor = (u8, u8, u8);
 
 pub enum CMDRenderCommand{
     DrawLine{
-        a: SSCoords,
-        b: SSCoords,
+        a: NDCoords,
+        b: NDCoords,
         chr: char,
         fg: CMDColor,
         bg: CMDColor},
     WriteText{
-        pos: SSCoords,
+        pos: NDCoords,
         text: String,
         fg: CMDColor,
         bg: CMDColor
     },
+    #[deprecated = "Deprecated out of lack of use cases"]
     DrawSequence{
         pos: SSCoords,
         sequence: Vec<(char, CMDColor, CMDColor)>
     },
     DrawRect{
-        a: SSCoords,
-        b: SSCoords,
+        a: NDCoords,
+        b: NDCoords,
         chr: char,
         fg: CMDColor,
         bg: CMDColor
     },
     DrawBox{
-        a: SSCoords,
-        b: SSCoords,
+        a: NDCoords,
+        b: NDCoords,
         chr: char,
         fg: CMDColor,
         bg: CMDColor
     },
     DrawSprite{
-        pos: SSCoords,
+        pos: NDCoords,
         sprite_id: String
     }
 }

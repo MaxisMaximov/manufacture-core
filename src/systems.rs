@@ -98,14 +98,18 @@ impl System for CMDRenderer{
 
         for cmd in render_queue.iter(){
             match cmd{
-                CMDRenderCommand::DrawLine { a, b, chr, fg, bg } => self.draw_line(*a, *b, *chr, *fg, *bg),
-                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text(*pos, text, *fg, *bg),
+                CMDRenderCommand::DrawLine { a, b, chr, fg, bg } => {
+                    let a = self.ndc_to_ss(*a);
+                    let b = self.ndc_to_ss(*b);
+                    self.draw_line(a, b, *chr, *fg, *bg)
+                },
+                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text_ndc(*pos, text, *fg, *bg),
                 CMDRenderCommand::DrawSequence { pos, sequence } => self.draw_sequence(*pos, sequence),
-                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect(*a, *b, *chr, *fg, *bg),
-                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect_ndc(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box_ndc(*a, *b, *chr, *fg, *bg),
                 CMDRenderCommand::DrawSprite { pos, sprite_id } => {
                     if let Some(sprite) = sprite_registry.get(sprite_id) {
-                        self.draw_sprite(*pos, sprite)
+                        self.draw_sprite_ndc(*pos, sprite)
                     }
                 },
             }
