@@ -240,14 +240,14 @@ impl CMDRenderer{
     fn plot_px(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
         // `self.size` is an EX-clusive range
-        if (x as usize, y as usize) >= self.size{ return }
-        self.buffer[x as usize + y as usize *self.size.0] = (chr, fg, bg);
+        if x as usize >= self.size.0 || y as usize >= self.size.1{ return }
+        self.buffer[x as usize + y as usize * self.size.0] = (chr, fg, bg);
     }
     fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
         // Shift, correct, and fract(?)
-        let x = ((pos.0 + 1.0) * 0.5 * self.size.0 as f32) as isize;
+        let x = ((pos.0 + 1.0) * 0.5 * (self.size.0-1) as f32) as isize;
         // An additional `* -1` to make -1 = Bottom instead of Top
-        let y = ((pos.1 + 1.0) * -0.5 * self.size.1 as f32) as isize;
+        let y = ((pos.1 * -1.0 + 1.0) * 0.5 * (self.size.1-1) as f32) as isize;
         (x, y)
     }
     #[deprecated = "Unstable to use, use `inbounds_ndc` instead"]
@@ -256,12 +256,10 @@ impl CMDRenderer{
         (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
     }
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
-        pos >= (-1.0, -1.0) || pos <= (1.0, 1.0)
+        pos.0 >= 0.0 && pos.1 >= 0.0 && pos.0 <= 1.0 && pos.1 <= 1.0
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        
-        if !self.bounds_check(a, b){ return }
 
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
@@ -353,13 +351,13 @@ impl CMDRenderer{
         }
     }
     fn draw_rect_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        if !self.inbounds_ndc(a) || !self.inbounds_ndc(b){ return }
+        if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         // ↘↘
-        let tl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
-        let br = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
+        let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
+        let tr = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
         
-        for x in tl.0..=br.0{
-            for y in tl.1..=br.1{
+        for x in bl.0..=tr.0{
+            for y in tr.1..=bl.1{
                 self.plot_px(x, y, chr, fg, bg);
             }
         }
@@ -383,18 +381,18 @@ impl CMDRenderer{
         }
     }
     fn draw_box_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        if !self.inbounds_ndc(a) || !self.inbounds_ndc(b){ return }
+        if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
 
-        let tl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
-        let br = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
+        let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
+        let tr = self.ndc_to_ss((a.0.max(b.0), a.1.max(b.1)));
 
-        for x in [tl.0, br.0]{
-            for y in tl.1..=br.1{
+        for x in [bl.0, tr.0]{
+            for y in tr.1..=bl.1{
                 self.plot_px(x, y, chr, fg, bg);
             }
         }
-        for y in [tl.1, br.1]{
-            for x in tl.0..=br.0{
+        for y in [bl.1, tr.1]{
+            for x in bl.0..=tr.0{
                 self.plot_px(x, y, chr, fg, bg);
             }
         }
