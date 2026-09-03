@@ -143,53 +143,31 @@ impl System for CMDRenderer{
         // Boundary border
         self.draw_box_ndc((-1.0, -1.0), (1.0, 1.0), '#', CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
-        // Sprite
-        self.draw_sprite_ndc((-1.2, 0.0), 
-        &types::ASCIIImage{
-            size_x: 6,
-            size_y: 3,
-            data: vec![
-                ('%', (255, 255, 255), (255, 0, 0)),
-                (' ', (255, 255, 255), (255, 0, 0)),
-                (' ', (255, 255, 255), (255, 0, 0)),
-                (' ', (255, 255, 255), (255, 0, 0)),
-                (' ', (255, 255, 255), (255, 0, 0)),
-                ('%', (255, 255, 255), (255, 0, 0)),
-                
-                ('#', (255, 255, 255), (0, 255, 0)),
-                (' ', (255, 255, 255), (0, 255, 0)),
-                (' ', (255, 255, 255), (0, 255, 0)),
-                (' ', (255, 255, 255), (0, 255, 0)),
-                (' ', (255, 255, 255), (0, 255, 0)),
-                ('#', (255, 255, 255), (0, 255, 0)),
-
-                ('&', (255, 255, 255), (0, 0, 255)),
-                (' ', (255, 255, 255), (0, 0, 255)),
-                (' ', (255, 255, 255), (0, 0, 255)),
-                (' ', (255, 255, 255), (0, 0, 255)),
-                (' ', (255, 255, 255), (0, 0, 255)),
-                ('&', (255, 255, 255), (0, 0, 255)),
-
-            ],
-        });
-
-        // Debug text
-        self.write_text_ndc((-0.9, 0.9), &format!("DEBUG: Terminal size: {:?}", self.size), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        // Sprite test
+        self.draw_sprite_ndc((-1.0, 0.0), &sprite_registry.get("CMD_RENDER_TEST").unwrap()); // UNWRAP: It's 100% guaranteed to be registered in the test build
 
         self.write_text_ndc(
-            (-0.2, 0.0), 
+            (-0.0, 0.0), 
             "Hello\nWorld", 
             CMD_FG_DEFAULT, 
             CMD_BG_DEFAULT
         );
 
-        self.write_text_ndc((-0.9, 0.8), &format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        // Debug Info
+        let mut debug_str = String::with_capacity(256);
+
+        debug_str.push_str(&format!("DEBUG: Terminal size: {:?}\n", self.size));
+
+
+        debug_str.push_str(&format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}\n", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame));
 
         self.profiler.update(delta_t.frame(), delta_t.logic_frame());
 
-        self.write_text_ndc((-0.9, 0.7), &format!("DEBUG: Estimated FPS: {:?}", self.profiler.last_frames), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        debug_str.push_str(&format!("DEBUG: Estimated FPS: {:?}\n", self.profiler.last_frames));
         
-        self.write_text_ndc((-0.9, 0.6), &format!("DEBUG: Debug frame processing took: {:?}", self.profiler.stop_frame_profile()), CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        debug_str.push_str(&format!("DEBUG: Debug frame processing took: {:?}\n", self.profiler.stop_frame_profile()));
+
+        self.write_text_ndc((-0.9, 0.9), &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 
         // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
@@ -235,6 +213,7 @@ impl CMDRenderer{
         if x as usize >= self.size.0 || y as usize >= self.size.1{ return }
         self.buffer[x as usize + y as usize * self.size.0] = (chr, fg, bg);
     }
+    #[inline(always)]
     fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
         // Shift, correct, and fract(?)
         let x = ((pos.0 + 1.0) * 0.5 * (self.size.0-1) as f32) as isize;
@@ -247,6 +226,7 @@ impl CMDRenderer{
         // If either of the coords is inside the bounds, it's fine
         (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
     }
+    #[inline(always)]
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
         pos.0 >= 0.0 && pos.1 >= 0.0 && pos.0 <= 1.0 && pos.1 <= 1.0
     }
@@ -280,7 +260,7 @@ impl CMDRenderer{
 
         }else{
             let (start, end) = {
-                // Swap A and B if B is closer to (0, 0)
+                // Swap A and B if B is closer to (0, 0) Screenspace
                 if a.1 < b.1{ (a, b) }else{ (b, a) }
             };
 
