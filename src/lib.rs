@@ -37,7 +37,10 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     disp_build.add::<systems::CMDInputGetter>();
 
     #[cfg(feature = "cmd_render_test")]
-    disp_build.add::<systems::CMDRenderer>();
+    {
+        disp_build.add::<systems::CMDRenderer>();
+        disp_build.add::<systems::CMDDebugRenders>();
+    }
     
     // -- Misc --
     #[cfg(feature = "cmd_render_test")]
