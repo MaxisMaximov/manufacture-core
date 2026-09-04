@@ -42,6 +42,7 @@ const CMD_SIZE_DEFAULT: (usize, usize) = (100, 20);
 
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
+    z_buffer: Vec<f32>,
     size: (usize, usize),
     
     profiler: CMDRendererProfiler
@@ -55,6 +56,7 @@ impl System for CMDRenderer{
     fn new() -> Self {
         Self{
             buffer: vec![CMD_CELL_DEFAULT; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
+            z_buffer: vec![f32::INFINITY; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             size: CMD_SIZE_DEFAULT,
             
             profiler: CMDRendererProfiler::new()
@@ -91,6 +93,7 @@ impl System for CMDRenderer{
         // Here to prevent unnecessary memory changes
         if self.size != cmd_size{
             self.buffer.resize(cmd_size.0 * cmd_size.1, CMD_CELL_DEFAULT);
+            self.z_buffer.resize(cmd_size.0 * cmd_size.1, f32::INFINITY);
             self.size = cmd_size;
         }
         
@@ -98,17 +101,17 @@ impl System for CMDRenderer{
         
         for cmd in render_queue.iter(){
             match cmd{
-                CMDRenderCommand::DrawLine { a, b, chr, fg, bg } => {
+                CMDRenderCommand::DrawLine { a, b, z, chr, fg, bg } => {
                     let a = self.ndc_to_ss(*a);
                     let b = self.ndc_to_ss(*b);
-                    self.draw_line(a, b, *chr, *fg, *bg)
+                    self.draw_line(a, b, *z, *chr, *fg, *bg)
                 },
-                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text(*pos, text, *fg, *bg),
-                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect(*a, *b, *chr, *fg, *bg),
-                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box(*a, *b, *chr, *fg, *bg),
-                CMDRenderCommand::DrawSprite { pos, sprite_id } => {
+                CMDRenderCommand::WriteText { pos, z, text, fg, bg } => self.write_text(*pos, *z, text, *fg, *bg),
+                CMDRenderCommand::DrawRect { a, b, z, chr, fg, bg } => self.draw_rect(*a, *b, *z, *chr, *fg, *bg),
+                CMDRenderCommand::DrawBox { a, b, z, chr, fg, bg } => self.draw_box(*a, *b, *z, *chr, *fg, *bg),
+                CMDRenderCommand::DrawSprite { pos, z, sprite_id } => {
                     if let Some(sprite) = sprite_registry.get(sprite_id) {
-                        self.draw_sprite(*pos, sprite)
+                        self.draw_sprite(*pos, *z, sprite)
                     }
                 },
             }
@@ -131,7 +134,7 @@ impl System for CMDRenderer{
         
         debug_str.push_str(&format!("DEBUG: Debug frame processing took: {:?}\n", self.profiler.stop_frame_profile()));
         
-        self.write_text((-0.9, 0.9), &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((-0.9, 0.9), 0.0, &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         
         // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
@@ -169,13 +172,16 @@ impl System for CMDRenderer{
 impl CMDRenderer{
     fn clear_buffer(&mut self){
         self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
+        self.z_buffer.iter_mut().for_each(|cell| *cell = f32::INFINITY);
     }
     #[inline(always)]
-    fn plot_px(&mut self, x: isize, y: isize, chr: char, fg: CMDColor, bg: CMDColor){
+    fn plot_px(&mut self, x: isize, y: isize, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
         // `self.size` is an EX-clusive range
         if x as usize >= self.size.0 || y as usize >= self.size.1{ return }
-        self.buffer[x as usize + y as usize * self.size.0] = (chr, fg, bg);
+        let coords = x as usize + y as usize * self.size.0;
+        if z > self.z_buffer[coords]{ return }
+        self.buffer[coords] = (chr, fg, bg);
     }
     #[inline(always)]
     fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
@@ -190,7 +196,7 @@ impl CMDRenderer{
         pos.0 >= 0.0 && pos.1 >= 0.0 && pos.0 <= 1.0 && pos.1 <= 1.0
     }
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
-    fn draw_line(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_line(&mut self, a: SSCoords, b: SSCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         
         let delta_x = a.0.abs_diff(b.0);
         let delta_y = a.1.abs_diff(b.1);
@@ -207,7 +213,7 @@ impl CMDRenderer{
             let mut y = start.1;
             
             for x in start.0..=end.0{
-                self.plot_px(x, y, chr, fg, bg);
+                self.plot_px(x, y, z, chr, fg, bg);
                 
                 err -= delta_y;
                 
@@ -228,7 +234,7 @@ impl CMDRenderer{
             let mut x = start.0;
             
             for y in start.1..=end.1{
-                self.plot_px(x, y, chr, fg, bg);
+                self.plot_px(x, y, z, chr, fg, bg);
                 
                 err -= delta_x;
                 
@@ -239,16 +245,16 @@ impl CMDRenderer{
             }
         }
     }
-    fn write_text(&mut self, pos: NDCoords, text: &str, fg: CMDColor, bg: CMDColor){
+    fn write_text(&mut self, pos: NDCoords, z: f32, text: &str, fg: CMDColor, bg: CMDColor){
         let origin = self.ndc_to_ss(pos);
         
         for (line_off, line) in text.lines().enumerate(){
             for (chr_off, chr) in line.char_indices(){
-                self.plot_px(origin.0 + chr_off as isize, origin.1 + line_off as isize, chr, fg, bg);
+                self.plot_px(origin.0 + chr_off as isize, origin.1 + line_off as isize, z, chr, fg, bg);
             }
         }
     }
-    fn draw_rect(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_rect(&mut self, a: NDCoords, b: NDCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         // ↘↘
         let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
@@ -256,11 +262,11 @@ impl CMDRenderer{
         
         for x in bl.0..=tr.0{
             for y in tr.1..=bl.1{
-                self.plot_px(x, y, chr, fg, bg);
+                self.plot_px(x, y, z, chr, fg, bg);
             }
         }
     }
-    fn draw_box(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_box(&mut self, a: NDCoords, b: NDCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         
         let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
@@ -268,21 +274,21 @@ impl CMDRenderer{
         
         for x in [bl.0, tr.0]{
             for y in tr.1..=bl.1{
-                self.plot_px(x, y, chr, fg, bg);
+                self.plot_px(x, y, z, chr, fg, bg);
             }
         }
         for y in [bl.1, tr.1]{
             for x in bl.0..=tr.0{
-                self.plot_px(x, y, chr, fg, bg);
+                self.plot_px(x, y, z, chr, fg, bg);
             }
         }
     }
-    fn draw_sprite(&mut self, pos: NDCoords, sprite: &types::ASCIIImage){
+    fn draw_sprite(&mut self, pos: NDCoords, z: f32, sprite: &types::ASCIIImage){
         let ss_pos = self.ndc_to_ss(pos);
         
         for (y_off, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
             for (x_off, px) in row.iter().enumerate(){
-                self.plot_px(ss_pos.0 + x_off as isize, ss_pos.1 + y_off as isize, px.0, px.1, px.2);
+                self.plot_px(ss_pos.0 + x_off as isize, ss_pos.1 + y_off as isize, z, px.0, px.1, px.2);
             }
         }
     }
@@ -346,6 +352,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawLine {
             a: (-1.0, 1.0),
             b: (1.0, -1.0),
+            z: 1.0,
             chr: '■',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT
@@ -353,6 +360,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawLine {
             a: (-1.0, -1.0),
             b: (1.0, 1.0),
+            z: 1.0,
             chr: '■',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT
@@ -362,6 +370,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (-1.0, 1.0),
             b: (-1.0, 1.0),
+            z: 0.8,
             chr: '#',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT,
@@ -369,6 +378,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (1.0, -1.0),
             b: (1.0, -1.0),
+            z: 0.8,
             chr: '#',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT,
@@ -376,6 +386,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (-1.0, -1.0),
             b: (-1.0, -1.0),
+            z: 0.8,
             chr: '#',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT,
@@ -383,6 +394,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (1.0, 1.0),
             b: (1.0, 1.0),
+            z: 0.8,
             chr: '#',
             fg: (255, 0, 0),
             bg: CMD_BG_DEFAULT,
@@ -393,6 +405,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawRect{
             a: (-0.333, -0.333),
             b: (0.333, 0.333),
+            z: 0.5,
             chr: '#',
             fg: CMD_FG_DEFAULT,
             bg: (0, 0, 255),
@@ -400,6 +413,7 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (-0.4, -0.4),
             b: (0.4, 0.4),
+            z: 0.5,
             chr: '=',
             fg: CMD_FG_DEFAULT,
             bg: (0, 0, 255),
@@ -409,16 +423,18 @@ impl System for CMDDebugRenders{
         data.push(CMDRenderCommand::DrawBox{
             a: (-1.0, -1.0),
             b: (1.0, 1.0),
+            z: 0.9,
             chr: '#',
             fg: CMD_FG_DEFAULT,
             bg: CMD_BG_DEFAULT,
         });
         
         // Sprite test
-        data.push(CMDRenderCommand::DrawSprite { pos: (-1.0, 0.0), sprite_id: "CMD_RENDER_TEST".to_owned() });
+        data.push(CMDRenderCommand::DrawSprite { pos: (-1.0, 0.0), z: 0.0, sprite_id: "CMD_RENDER_TEST".to_owned() });
         
         data.push(CMDRenderCommand::WriteText {
             pos: (0.0, 0.0),
+            z: 0.0,
             text: "Hello\nWorld".to_owned(),
             fg: CMD_FG_DEFAULT,
             bg: CMD_BG_DEFAULT

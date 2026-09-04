@@ -61,11 +61,13 @@ pub enum CMDRenderCommand{
     DrawLine{
         a: NDCoords,
         b: NDCoords,
+        z: f32,
         chr: char,
         fg: CMDColor,
         bg: CMDColor},
     WriteText{
         pos: NDCoords,
+        z: f32,
         text: String,
         fg: CMDColor,
         bg: CMDColor
@@ -73,6 +75,7 @@ pub enum CMDRenderCommand{
     DrawRect{
         a: NDCoords,
         b: NDCoords,
+        z: f32,
         chr: char,
         fg: CMDColor,
         bg: CMDColor
@@ -80,12 +83,14 @@ pub enum CMDRenderCommand{
     DrawBox{
         a: NDCoords,
         b: NDCoords,
+        z: f32,
         chr: char,
         fg: CMDColor,
         bg: CMDColor
     },
     DrawSprite{
         pos: NDCoords,
+        z: f32,
         sprite_id: String
     }
 }
