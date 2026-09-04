@@ -70,8 +70,7 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
                 (' ', (255, 255, 255), (0, 0, 255)),
                 (' ', (255, 255, 255), (0, 0, 255)),
                 ('&', (255, 255, 255), (0, 0, 255)),
-
-            ],
+            ].into_boxed_slice(),
         }
     );
 }

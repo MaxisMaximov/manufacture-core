@@ -98,11 +98,11 @@ pub trait Tag{
 /// 
 /// TODO: Add varying origin point
 pub struct CMDSprite{
-    pub id: &'static str,
+    pub id: String,
     pub z_index: u16,
 }
 impl Component for CMDSprite{
-    type STORAGE = HashMapStorage<Self>;
+    type STORAGE = BTreeMapStorage<Self>;
 
     const ID: &'static str = "CMDSprite";
 }

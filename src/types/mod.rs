@@ -98,5 +98,5 @@ pub enum CMDRenderCommand{
 pub struct ASCIIImage{
     pub size_x: u8,
     pub size_y: u8,
-    pub data: Vec<(char, (u8, u8, u8), (u8, u8, u8))> // Symbol, Foreground RGB, Background RGB
+    pub data: Box<[(char, (u8, u8, u8), (u8, u8, u8))]> // Symbol, Foreground RGB, Background RGB
 }
