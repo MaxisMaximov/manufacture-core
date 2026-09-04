@@ -89,12 +89,9 @@ pub trait Tag{
 
 /// A Command-Line sprite
 /// 
-/// Represents a 2D ASCII art image
+/// Represents an Entity that can be drawn by CMDRenderer
 /// 
 /// Origin is at top left, represented by `(0, 0)`
-/// 
-/// Individual *"pixels"* are `(ch, fg, bg)` tuples: `ch`aracter, `f`ore`g`round color and `b`ack`g`round color.  
-/// FG and BG colors are `(R, G, B)` tuples that use `u8` as values
 /// 
 /// TODO: Add varying origin point
 pub struct CMDSprite{

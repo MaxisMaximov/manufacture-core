@@ -37,7 +37,7 @@ impl Resource for CMDInput{
     }
 }
 
-/// # CMDRenderer Camera
+/// # Command Line Renderer Camera
 /// Hold the position of the camera for `CMDRenderer`
 /// 
 /// Note: Multiple cameras are unsupported right now
@@ -54,6 +54,8 @@ impl Resource for CMDCamera{
     }
 }
 
+/// # Command Line Renderer Sprite Registry
+/// Holds sprites scheduled to be drawn by `CMDRenderCommand`
 pub struct CMDSpriteRegistry{
     inner: HashMap<String, ASCIIImage>
 }
@@ -67,26 +69,33 @@ impl Resource for CMDSpriteRegistry{
     }
 }
 impl CMDSpriteRegistry{
+    /// Register a sprite under ID
     pub fn register(&mut self, id: String, sprite: ASCIIImage){
         self.inner.insert(id, sprite);
     }
+    /// Unregister a sprite
     pub fn unregister(&mut self, id: &'static str){
         self.inner.remove(id);
     }
+    /// Get an immutable reference to a sprite
     pub fn get<'a>(&'a self, id: &'a str) -> Option<&'a ASCIIImage>{
         self.inner.get(id)
     }
+    /// Get a mutable reference to a sprite
     pub fn get_mut<'a>(&'a mut self, id: &'a str) -> Option<&'a mut ASCIIImage>{
         self.inner.get_mut(id)
     }
 }
 
+/// Minimum size for CMD Render Queue
 const CMD_QUEUE_DEFAULT: usize = 32;
 
-pub struct CMDRendererQueue{
+/// # Command Line Render Queue
+/// Holds commands for `CMDRenderer` to execute
+pub struct CMDRenderQueue{
     inner: Vec<CMDRenderCommand>
 }
-impl Resource for CMDRendererQueue{
+impl Resource for CMDRenderQueue{
     const ID: &'static str = "CMDRendererQueue";
 
     fn new() -> Self {
@@ -95,13 +104,18 @@ impl Resource for CMDRendererQueue{
         }
     }
 }
-impl CMDRendererQueue{
+impl CMDRenderQueue{
+    /// Push a new command into the queue
     pub fn push(&mut self, command: CMDRenderCommand){
         self.inner.push(command);
     }
+    /// Iterate over all commands in the queue
     pub fn iter(&self) -> std::slice::Iter<'_, CMDRenderCommand>{
         self.inner.iter()
     }
+    /// Clear the queue
+    /// 
+    /// **WARNING**: Clearing the queue may cause important things to not render
     pub fn clear(&mut self){
         self.inner.clear();
     }

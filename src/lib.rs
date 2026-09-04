@@ -27,20 +27,15 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
 
     // -- Resources --
     world.register_res::<resources::CMDInput>();
-    #[cfg(feature = "cmd_render_test")]
-    {
-        world.register_res::<resources::CMDSpriteRegistry>();
-        world.register_res::<resources::CMDRendererQueue>();
-    }
+    world.register_res::<resources::CMDSpriteRegistry>();
+    world.register_res::<resources::CMDRenderQueue>();
 
     // -- Systems --
     disp_build.add::<systems::CMDInputGetter>();
+    disp_build.add::<systems::CMDRenderer>();
 
     #[cfg(feature = "cmd_render_test")]
-    {
-        disp_build.add::<systems::CMDRenderer>();
-        disp_build.add::<systems::CMDDebugRenders>();
-    }
+    disp_build.add::<systems::CMDTestRenders>();
     
     // -- Misc --
     #[cfg(feature = "cmd_render_test")]

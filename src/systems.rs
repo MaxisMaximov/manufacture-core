@@ -1,3 +1,4 @@
+#[cfg(feature = "cmd_render_test")]
 use std::time::Instant;
 
 use super::*;
@@ -5,13 +6,13 @@ use resources::*;
 use types::*;
 
 /// # Command Line Input Handler
-/// Acquires the current pressed key from the Command Line
+/// Acquires the current pressed key from the Command Line in Raw Mode
 /// 
 /// Note: Some terminals may put `Press` and `Hold` events
-/// at the same time when you press a key
+/// at the same time when you press a key in Raw Mode
 /// 
 /// Note: Holding a key in Raw Mode floods the input buffer
-/// and may prevent the Handler from reading other keys
+/// and may prevent the Handler from reading other keys for a while
 /// 
 /// TODO: Fix the double input issue
 pub struct CMDInputGetter;
@@ -40,16 +41,25 @@ const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 const CMD_CELL_DEFAULT: (char, CMDColor, CMDColor) = (CMD_CHR_DEFAULT, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
 const CMD_SIZE_DEFAULT: (usize, usize) = (100, 20);
 
+/// # Command Line Renderer
+/// Draws to Command Line screen in OpenGL-style fashion
+/// 
+/// Push `CMDRenderCommand`s into `CMDRenderQueue` to draw
 pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     z_buffer: Vec<f32>,
     size: (usize, usize),
+    can_resize: bool,
     
+    #[cfg(feature = "cmd_render_test")]
     profiler: CMDRendererProfiler
 }
 
 impl System for CMDRenderer{
-    type Data<'a> = (&'a DeltaT, &'a mut CMDRendererQueue, &'a CMDSpriteRegistry);
+    #[cfg(not(feature = "cmd_render_test"))]
+    type Data<'a> = (&'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
+    #[cfg(feature = "cmd_render_test")]
+    type Data<'a> = (&'a DeltaT, &'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
     
@@ -58,7 +68,9 @@ impl System for CMDRenderer{
             buffer: vec![CMD_CELL_DEFAULT; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             z_buffer: vec![f32::INFINITY; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             size: CMD_SIZE_DEFAULT,
+            can_resize: true,
             
+            #[cfg(feature = "cmd_render_test")]
             profiler: CMDRendererProfiler::new()
         }
     }
@@ -68,37 +80,51 @@ impl System for CMDRenderer{
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
         
+        #[cfg(not(feature = "cmd_render_test"))]
+        let (
+            mut render_queue,
+            sprite_registry
+        ) = _data.into_raw();
+        
+        #[cfg(feature = "cmd_render_test")]
         let (
             delta_t,
             mut render_queue,
             sprite_registry
         ) = _data.into_raw();
-        
+
         execute!(stdout(), cursor::MoveTo(0, 0)).ok();
         
+        #[cfg(feature = "cmd_render_test")]
         self.profiler.start_frame_profile();
+        
         let mut lock = stdout().lock();
         
-        let cmd_size = match terminal::size(){
-            Ok(size) => {
-                (size.0 as usize, size.1 as usize)
-            },
-            Err(_) => {
-                eprint!("DEBUG: Couldn't get Terminal size. Defaulting to {:?}. Resize your terminal accordingly", CMD_SIZE_DEFAULT);
-                std::thread::sleep(std::time::Duration::from_secs(5));
-                CMD_SIZE_DEFAULT
-            },
-        };
-        
-        // Here to prevent unnecessary memory changes
-        if self.size != cmd_size{
-            self.buffer.resize(cmd_size.0 * cmd_size.1, CMD_CELL_DEFAULT);
-            self.z_buffer.resize(cmd_size.0 * cmd_size.1, f32::INFINITY);
+        if self.can_resize{
+            // Get Screen size
+            let cmd_size = match terminal::size(){
+                Ok(size) => {
+                    (size.0 as usize, size.1 as usize)
+                },
+                Err(_) => {
+                    eprint!("ERROR: Couldn't get Terminal size. Defaulting to {:?}. Resize your terminal accordingly", CMD_SIZE_DEFAULT);
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    self.can_resize = false;
+                    CMD_SIZE_DEFAULT
+                },
+            };
+            
+            // Here to prevent unnecessary memory changes
+            if self.size != cmd_size{
+                self.buffer.resize(cmd_size.0 * cmd_size.1, CMD_CELL_DEFAULT);
+                self.z_buffer.resize(cmd_size.0 * cmd_size.1, f32::INFINITY);
             self.size = cmd_size;
+            }
         }
         
         self.clear_buffer();
         
+        // -- DRAW COMMANDS --
         for cmd in render_queue.iter(){
             match cmd{
                 CMDRenderCommand::DrawLine { a, b, z, chr, fg, bg } => {
@@ -118,23 +144,23 @@ impl System for CMDRenderer{
         }
         render_queue.clear();
         
-        // -- DEBUG RENDERS --
-        
-        // Debug Info
-        let mut debug_str = String::with_capacity(256);
-        
-        debug_str.push_str(&format!("DEBUG: Terminal size: {:?}\n", self.size));
-        
-        
-        debug_str.push_str(&format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}\n", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame));
-        
-        self.profiler.update(delta_t.frame(), delta_t.logic_frame());
-        
-        debug_str.push_str(&format!("DEBUG: Estimated FPS: {:?}\n", self.profiler.last_frames));
-        
-        debug_str.push_str(&format!("DEBUG: Debug frame processing took: {:?}\n", self.profiler.stop_frame_profile()));
-        
-        self.write_text((-0.9, 0.9), 0.0, &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        #[cfg(feature = "cmd_render_test")]
+        {
+            // -- DEBUG INFO --
+            let mut debug_str = String::with_capacity(256);
+            
+            debug_str.push_str(&format!("DEBUG: Terminal size: {:?}\n", self.size));
+            
+            debug_str.push_str(&format!("DEBUG: Frame: {}; Logic Frame: {}; Last check: {}; Delta: {}\n", delta_t.frame(), delta_t.logic_frame(), self.profiler.last_check_frame, delta_t.frame() - self.profiler.last_check_frame));
+            
+            self.profiler.update(delta_t.frame(), delta_t.logic_frame());
+            
+            debug_str.push_str(&format!("DEBUG: Estimated FPS: {:?}\n", self.profiler.last_frames));
+            
+            debug_str.push_str(&format!("DEBUG: Debug frame processing took: {:?}\n", self.profiler.stop_frame_profile()));
+            
+            self.write_text((-0.9, 0.9), 0.0, &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        }
         
         // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
@@ -170,20 +196,25 @@ impl System for CMDRenderer{
     }
 }
 impl CMDRenderer{
+    /// Clear buffer
+    #[inline(always)]
     fn clear_buffer(&mut self){
         self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
         self.z_buffer.iter_mut().for_each(|cell| *cell = f32::INFINITY);
     }
+    /// Plot a _'pixel'_ at `(x, y)`
     #[inline(always)]
     fn plot_px(&mut self, x: isize, y: isize, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         // Negative `isize` cast to `usize` is always bigger than 0
         // `self.size` is an EX-clusive range
-        if x as usize >= self.size.0 || y as usize >= self.size.1{ return }
+        if (x as usize) < self.size.0 && (y as usize) < self.size.1{
         let coords = x as usize + y as usize * self.size.0;
         if z > self.z_buffer[coords]{ return }
         self.buffer[coords] = (chr, fg, bg);
+        }
     }
     #[inline(always)]
+    /// Convert Normalized Device Coordinates to ScreenSpace coordinates
     fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
         // Shift, correct, and fract(?)
         let x = ((pos.0 + 1.0) * 0.5 * (self.size.0-1) as f32) as isize;
@@ -192,9 +223,12 @@ impl CMDRenderer{
         (x, y)
     }
     #[inline(always)]
+    /// Check if coordinate is in bounds
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
         pos.0 >= 0.0 && pos.1 >= 0.0 && pos.0 <= 1.0 && pos.1 <= 1.0
     }
+    /// Draw a line between `a` and `b`
+    /// 
     /// Uses Brehensam algorithm modified to work purely on unsigned integers
     fn draw_line(&mut self, a: SSCoords, b: SSCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         
@@ -245,6 +279,9 @@ impl CMDRenderer{
             }
         }
     }
+    /// Write text starting from `pos`
+    /// 
+    /// Supports newline breaks
     fn write_text(&mut self, pos: NDCoords, z: f32, text: &str, fg: CMDColor, bg: CMDColor){
         let origin = self.ndc_to_ss(pos);
         
@@ -254,6 +291,9 @@ impl CMDRenderer{
             }
         }
     }
+    /// Draw a rectangle from `a` to `b`
+    /// 
+    /// Not to be confused with `draw_box` which draws a hollow rectangle
     fn draw_rect(&mut self, a: NDCoords, b: NDCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         // ↘↘
@@ -266,6 +306,9 @@ impl CMDRenderer{
             }
         }
     }
+    /// Draw a box from `a` to `b`
+    /// 
+    /// Not to be confused with `draw_rectangle` which draws a filled in box
     fn draw_box(&mut self, a: NDCoords, b: NDCoords, z: f32, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         
@@ -283,6 +326,11 @@ impl CMDRenderer{
             }
         }
     }
+    /// Draw sprite at `pos`
+    /// 
+    /// Note: Sprites' anchor is currently on top-left corner
+    /// 
+    /// TODO: Add varying origin point
     fn draw_sprite(&mut self, pos: NDCoords, z: f32, sprite: &types::ASCIIImage){
         let ss_pos = self.ndc_to_ss(pos);
         
@@ -300,12 +348,14 @@ impl CMDRenderer{
 /// By default it's disabled, compile with Debug flag to enable
 /// 
 /// TODO: Make it toggleable at runtime
+#[cfg(feature = "cmd_render_test")]
 struct CMDRendererProfiler{
     frame_profile_start: Instant,
     last_check_frame: u64,
     last_logic_frame: u64,
     last_frames: u64
 }
+#[cfg(feature = "cmd_render_test")]
 impl CMDRendererProfiler{
     fn new() -> Self{
         Self{
@@ -331,15 +381,21 @@ impl CMDRendererProfiler{
     }
 }
 
-pub struct CMDDebugRenders;
-impl System for CMDDebugRenders{
-    type Data<'a> = &'a mut CMDRendererQueue;
+/// # CMD TEST RENDERS
+/// A rudimentary system that send in a bunch of test primitives 
+/// to ensure it gets rendered correctly
+/// 
+/// Note: **THIS IS NOT AN AUTOMATED TEST.**
+/// You will need to see the Terminal output manually for any errors
+pub struct CMDTestRenders;
+impl System for CMDTestRenders{
+    type Data<'a> = &'a mut CMDRenderQueue;
     
-    const ID: &'static str = "CMDDebugRenders";
+    const ID: &'static str = "CMDTestRenders";
 
-    const DEPENDS: &'static [&'static str] = &["CMDRenderer"];
+    const DEPENDS: &'static [&'static str] = &[CMDRenderer::ID];
 
-    const RUNORD: &'static [RunOrder] = &[RunOrder::Before("CMDRenderer")];
+    const RUNORD: &'static [RunOrder] = &[RunOrder::Before(CMDRenderer::ID)];
 
     const TYPE: SystemType = SystemType::Postprocessor;
     
