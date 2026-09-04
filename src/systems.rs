@@ -103,13 +103,12 @@ impl System for CMDRenderer{
                     let b = self.ndc_to_ss(*b);
                     self.draw_line(a, b, *chr, *fg, *bg)
                 },
-                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text_ndc(*pos, text, *fg, *bg),
-                CMDRenderCommand::DrawSequence { pos, sequence } => self.draw_sequence(*pos, sequence),
-                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect_ndc(*a, *b, *chr, *fg, *bg),
-                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box_ndc(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::WriteText { pos, text, fg, bg } => self.write_text(*pos, text, *fg, *bg),
+                CMDRenderCommand::DrawRect { a, b, chr, fg, bg } => self.draw_rect(*a, *b, *chr, *fg, *bg),
+                CMDRenderCommand::DrawBox { a, b, chr, fg, bg } => self.draw_box(*a, *b, *chr, *fg, *bg),
                 CMDRenderCommand::DrawSprite { pos, sprite_id } => {
                     if let Some(sprite) = sprite_registry.get(sprite_id) {
-                        self.draw_sprite_ndc(*pos, sprite)
+                        self.draw_sprite(*pos, sprite)
                     }
                 },
             }
@@ -132,7 +131,7 @@ impl System for CMDRenderer{
         
         debug_str.push_str(&format!("DEBUG: Debug frame processing took: {:?}\n", self.profiler.stop_frame_profile()));
         
-        self.write_text_ndc((-0.9, 0.9), &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
+        self.write_text((-0.9, 0.9), &debug_str, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
         
         // -- RENDER --
         execute!(lock, cursor::MoveTo(0, 0)).ok();
@@ -185,11 +184,6 @@ impl CMDRenderer{
         // An additional `* -1` to make -1 = Bottom instead of Top
         let y = ((pos.1 * -1.0 + 1.0) * 0.5 * (self.size.1-1) as f32) as isize;
         (x, y)
-    }
-    #[deprecated = "Unstable to use, use `inbounds_ndc` instead"]
-    fn bounds_check(&self, a: SSCoords, b: SSCoords) -> bool{
-        // If either of the coords is inside the bounds, it's fine
-        (a.0 as usize, a.1 as usize) < self.size || (b.0 as usize, b.1 as usize) < self.size
     }
     #[inline(always)]
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
@@ -245,18 +239,7 @@ impl CMDRenderer{
             }
         }
     }
-    #[deprecated = "Unstable to use, use `write_text_ndc` instead"]
-    fn write_text(&mut self, pos: SSCoords, text: &str, fg: CMDColor, bg: CMDColor){
-        // We only check the `pos`, all text happens lower down
-        if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
-        
-        for (y_offset, line) in text.lines().enumerate(){
-            for (x_offset, chr) in line.char_indices(){
-                self.plot_px(pos.0 + x_offset as isize, pos.1 + y_offset as isize, chr, fg, bg);
-            }
-        }
-    }
-    fn write_text_ndc(&mut self, pos: NDCoords, text: &str, fg: CMDColor, bg: CMDColor){
+    fn write_text(&mut self, pos: NDCoords, text: &str, fg: CMDColor, bg: CMDColor){
         let origin = self.ndc_to_ss(pos);
         
         for (line_off, line) in text.lines().enumerate(){
@@ -265,29 +248,7 @@ impl CMDRenderer{
             }
         }
     }
-    #[deprecated = "Deprecated out of lack of use cases"]
-    fn draw_sequence(&mut self, pos: SSCoords, sequence: &[(char, CMDColor, CMDColor)]){
-        // We only check the `pos`, all text happens lower down
-        if (pos.0 as usize, pos.1 as usize) >= self.size{ return }
-        
-        for (x_offset, (chr, fg, bg)) in sequence.iter().enumerate(){
-            self.plot_px(pos.0 + x_offset as isize, pos.1, *chr, *fg, *bg);
-        }
-    }
-    #[deprecated = "Unstable to use, use `draw_rect_ndc` instead"]
-    fn draw_rect(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        
-        if !self.bounds_check(a, b){ return }
-        
-        let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
-        
-        for x in tr.0..=bl.0{
-            for y in tr.1..=bl.1{
-                self.plot_px(x, y, chr, fg, bg);
-            }
-        }
-    }
-    fn draw_rect_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_rect(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         // ↘↘
         let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
@@ -299,25 +260,7 @@ impl CMDRenderer{
             }
         }
     }
-    #[deprecated = "Unstable to use, use `draw_box_ndc` instead"]
-    fn draw_box(&mut self, a: SSCoords, b: SSCoords, chr: char, fg: CMDColor, bg: CMDColor){
-        
-        if !self.bounds_check(a, b){ return }
-        
-        let (tr, bl) = if a < b { (a, b) }else{ (b, a) };
-        
-        for y in [tr.1, bl.1]{
-            for x in tr.0..=bl.0{
-                self.plot_px(x, y, chr, fg, bg);
-            }
-        }
-        for x in [tr.0, bl.0]{
-            for y in tr.1..=bl.1{
-                self.plot_px(x, y, chr, fg, bg);
-            }
-        }
-    }
-    fn draw_box_ndc(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
+    fn draw_box(&mut self, a: NDCoords, b: NDCoords, chr: char, fg: CMDColor, bg: CMDColor){
         if !self.inbounds_ndc(a) && !self.inbounds_ndc(b){ return }
         
         let bl = self.ndc_to_ss((a.0.min(b.0), a.1.min(b.1)));
@@ -334,18 +277,7 @@ impl CMDRenderer{
             }
         }
     }
-    #[deprecated = "Unstable to use, use `draw_sprite_ndc` instead"]
-    fn draw_sprite(&mut self, pos: SSCoords, sprite: &types::ASCIIImage){
-        
-        if !self.bounds_check(pos, (pos.0 + sprite.size_x as isize, pos.1 + sprite.size_y as isize)){ return }
-        
-        for (y_offset, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){
-            for (x_offset, (chr, fg, bg)) in row.iter().enumerate(){
-                self.plot_px(pos.0 + x_offset as isize, pos.1 + y_offset as isize, *chr, *fg, *bg);
-            }
-        }
-    }
-    fn draw_sprite_ndc(&mut self, pos: NDCoords, sprite: &types::ASCIIImage){
+    fn draw_sprite(&mut self, pos: NDCoords, sprite: &types::ASCIIImage){
         let ss_pos = self.ndc_to_ss(pos);
         
         for (y_off, row) in sprite.data.chunks(sprite.size_x as usize).enumerate(){

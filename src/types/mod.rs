@@ -70,11 +70,6 @@ pub enum CMDRenderCommand{
         fg: CMDColor,
         bg: CMDColor
     },
-    #[deprecated = "Deprecated out of lack of use cases"]
-    DrawSequence{
-        pos: SSCoords,
-        sequence: Vec<(char, CMDColor, CMDColor)>
-    },
     DrawRect{
         a: NDCoords,
         b: NDCoords,
