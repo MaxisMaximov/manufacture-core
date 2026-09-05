@@ -48,3 +48,79 @@ pub trait EntityPrefab{
     const ID: &'static str = "idkfa";
     fn spawn(&self, builder: EntityBuilder<'_>);
 }
+
+/// Screenspace coords
+/// `isize` instead of `usize` to prevent Underflow warnings without much additional code
+pub type SSCoords = (isize, isize);
+/// Normalized Device Coordinates
+pub type NDCoords = (f32, f32);
+/// (R, G, B)
+pub type CMDColor = (u8, u8, u8);
+
+/// # CMD Renderer Command
+/// A command that tells CMDRenderer what to draw to the Terminal screen
+/// 
+/// Push new Commands into `CMDRenderQueue` to schedule them
+pub enum CMDRenderCommand{
+    /// Draw a line between `a` and `b`
+    DrawLine{
+        a: NDCoords,
+        b: NDCoords,
+        z: f32,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor},
+    /// Write text starting from `pos`
+    /// 
+    /// Supports newline breaks
+    WriteText{
+        pos: NDCoords,
+        z: f32,
+        text: String,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    /// Draw a rectangle from `a` to `b`
+    /// 
+    /// Not to be confused with `draw_box` which draws a hollow rectangle
+    DrawRect{
+        a: NDCoords,
+        b: NDCoords,
+        z: f32,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    /// Draw a box from `a` to `b`
+    /// 
+    /// Not to be confused with `draw_rectangle` which draws a filled in box
+    DrawBox{
+        a: NDCoords,
+        b: NDCoords,
+        z: f32,
+        chr: char,
+        fg: CMDColor,
+        bg: CMDColor
+    },
+    /// Draw a specified sprite from Sprite Registry at `pos`
+    /// 
+    /// Note: Sprites' anchor is currently on top-left corner
+    /// 
+    /// TODO: Add varying origin point
+    DrawSprite{
+        pos: NDCoords,
+        z: f32,
+        sprite_id: String
+    }
+}
+
+/// # ASCII Image
+/// Represents an ASCII art image
+/// 
+/// Individual *"pixels"* are `(ch, fg, bg)` tuples: `ch`aracter, `f`ore`g`round color and `b`ack`g`round color.  
+/// FG and BG colors are `(R, G, B)` tuples that use `u8` as values
+pub struct ASCIIImage{
+    pub size_x: u8,
+    pub size_y: u8,
+    pub data: Box<[(char, (u8, u8, u8), (u8, u8, u8))]> // Symbol, Foreground RGB, Background RGB
+}

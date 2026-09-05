@@ -58,6 +58,21 @@ impl Vector2{
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
+    /// Convert `self` into a 3D Vector, looking through X axis
+    pub fn into_3d_x(self) -> Vector3{
+        Vector3 { x: 0.0, y: self.x, z: self.y }
+    }
+
+    /// Convert `self` into a 3D Vector, looking through Y axis
+    pub fn into_3d_y(self) -> Vector3{
+        Vector3 { x: -self.x, y: 0.0, z: self.y }
+    }
+
+    /// Convert `self` into a 3D Vector, looking through Z axis
+    pub fn into_3d_z(self) -> Vector3{
+        Vector3 { x: self.x, y: self.y, z: 0.0 }
+    }
+
 }
 impl std::fmt::Display for Vector2{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -220,6 +235,21 @@ impl Vector3{
     /// Because this uses Pythagorean Theorem to calculate, a Vector too big may cause an overflow, and subsequently a crash
     pub fn magnitude(self) -> f32{
         (self.x.powi(2) + self.y.powi(2) + self.x.powi(2)).sqrt()
+    }
+
+    /// Convert `self` into a 2D Vector, looking through X axis
+    pub fn into_2d_x(self) -> Vector2{
+        Vector2 { x: self.y, y: self.z }
+    }
+
+    /// Convert `self` into a 2D Vector, looking through Y axis
+    pub fn into_2d_y(self) -> Vector2{
+        Vector2 { x: -self.x, y: self.z }
+    }
+
+    /// Convert `self` into a 2D Vector, looking through Z axis
+    pub fn into_2d_z(self) -> Vector2{
+        Vector2 { x: self.x, y: self.y }
     }
 }   
 impl std::fmt::Display for Vector3{

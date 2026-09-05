@@ -27,7 +27,45 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
 
     // -- Resources --
     world.register_res::<resources::CMDInput>();
+    world.register_res::<resources::CMDSpriteRegistry>();
+    world.register_res::<resources::CMDRenderQueue>();
 
     // -- Systems --
-    disp_build.add::<systems::CMDInputHandler>();
+    disp_build.add::<systems::CMDInputGetter>();
+    disp_build.add::<systems::CMDRenderer>();
+
+    #[cfg(feature = "cmd_render_test")]
+    disp_build.add::<systems::CMDTestRenders>();
+    
+    // -- Misc --
+    #[cfg(feature = "cmd_render_test")]
+    world.fetch_res_mut::<resources::CMDSpriteRegistry>().register(
+        "CMD_RENDER_TEST".to_owned(),
+        types::ASCIIImage{
+            size_x: 6,
+            size_y: 3,
+            data: vec![
+                ('%', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                (' ', (255, 255, 255), (255, 0, 0)),
+                ('%', (255, 255, 255), (255, 0, 0)),
+                
+                ('#', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                (' ', (255, 255, 255), (0, 255, 0)),
+                ('#', (255, 255, 255), (0, 255, 0)),
+
+                ('&', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                (' ', (255, 255, 255), (0, 0, 255)),
+                ('&', (255, 255, 255), (0, 0, 255)),
+            ].into_boxed_slice(),
+        }
+    );
 }

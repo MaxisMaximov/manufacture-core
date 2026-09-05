@@ -89,18 +89,17 @@ pub trait Tag{
 
 /// A Command-Line sprite
 /// 
-/// Represents a 2D ASCII art image
+/// Represents an Entity that can be drawn by CMDRenderer
 /// 
-/// Individual *"pixels"* are `(ch, fg, bg)` tuples: `ch`aracter, `f`ore`g`round color and `b`ack`g`round color.  
-/// FG and BG colors are `(R, G, B)` tuples that use `u8` as values
+/// Origin is at top left, represented by `(0, 0)`
+/// 
+/// TODO: Add varying origin point
 pub struct CMDSprite{
-    pub size_x: u8,
-    pub size_y: u8,
+    pub id: String,
     pub z_index: u16,
-    pub data: Vec<(char, (u8, u8, u8), (u8, u8, u8))> // Symbol, Foreground RGB, Background RGB
 }
 impl Component for CMDSprite{
-    type STORAGE = HashMapStorage<Self>;
+    type STORAGE = BTreeMapStorage<Self>;
 
     const ID: &'static str = "CMDSprite";
 }
