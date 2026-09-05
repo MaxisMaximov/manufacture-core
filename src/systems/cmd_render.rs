@@ -1,39 +1,4 @@
-#[cfg(feature = "cmd_render_test")]
-use std::time::Instant;
-
 use super::*;
-use resources::*;
-use types::*;
-
-/// # Command Line Input Handler
-/// Acquires the current pressed key from the Command Line in Raw Mode
-/// 
-/// Note: Some terminals may put `Press` and `Hold` events
-/// at the same time when you press a key in Raw Mode
-/// 
-/// Note: Holding a key in Raw Mode floods the input buffer
-/// and may prevent the Handler from reading other keys for a while
-/// 
-/// TODO: Fix the double input issue
-pub struct CMDInputGetter;
-impl System for CMDInputGetter{
-    type Data<'a> = &'a mut CMDInput;
-    const ID: &'static str = "CMDInput";
-    const TYPE: SystemType = SystemType::Preprocessor;
-    
-    fn new() -> Self { Self }
-    
-    fn execute(&mut self, mut data: Request<'_, Self::Data<'_>>) {
-        use crossterm::event::{Event, read, poll};
-        if poll(std::time::Duration::from_millis(0)).unwrap(){
-            if let Event::Key(key) = read().unwrap(){
-                data.set(key)
-            }
-        }else{
-            data.reset();
-        }
-    }
-}
 
 const CMD_CHR_DEFAULT: char = ' ';
 const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);
@@ -387,7 +352,9 @@ impl CMDRendererProfiler{
 /// 
 /// Note: **THIS IS NOT AN AUTOMATED TEST.**
 /// You will need to see the Terminal output manually for any errors
-pub struct CMDTestRenders;
+#[cfg(feature = "cmd_render_test")]
+pub(crate) struct CMDTestRenders;
+#[cfg(feature = "cmd_render_test")]
 impl System for CMDTestRenders{
     type Data<'a> = &'a mut CMDRenderQueue;
     

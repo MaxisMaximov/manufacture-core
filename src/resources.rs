@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use super::*;
 use types::*;
 
+// -- Re-exports --
 pub use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
 /// # User input -- CMD
 /// Stores the input provided by the Command Line
