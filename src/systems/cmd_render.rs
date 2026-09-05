@@ -1,10 +1,10 @@
 use super::*;
 
 const CMD_CHR_DEFAULT: char = ' ';
-const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);
-const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
+pub(crate) const CMD_FG_DEFAULT: CMDColor = (255, 255, 255);
+pub(crate) const CMD_BG_DEFAULT: CMDColor = (0, 0, 0);
 const CMD_CELL_DEFAULT: (char, CMDColor, CMDColor) = (CMD_CHR_DEFAULT, CMD_FG_DEFAULT, CMD_BG_DEFAULT);
-const CMD_SIZE_DEFAULT: (usize, usize) = (100, 20);
+pub(crate) const CMD_SIZE_DEFAULT: (usize, usize) = (100, 20);
 
 /// # Command Line Renderer
 /// Draws to Command Line screen in OpenGL-style fashion
@@ -14,7 +14,6 @@ pub struct CMDRenderer{
     buffer: Vec<(char, CMDColor, CMDColor)>,
     z_buffer: Vec<f32>,
     size: (usize, usize),
-    can_resize: bool,
     
     #[cfg(feature = "cmd_render_test")]
     profiler: CMDRendererProfiler
@@ -22,9 +21,9 @@ pub struct CMDRenderer{
 
 impl System for CMDRenderer{
     #[cfg(not(feature = "cmd_render_test"))]
-    type Data<'a> = (&'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
+    type Data<'a> = (&'a CMDData, &'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
     #[cfg(feature = "cmd_render_test")]
-    type Data<'a> = (&'a DeltaT, &'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
+    type Data<'a> = (&'a CMDData, &'a DeltaT, &'a mut CMDRenderQueue, &'a CMDSpriteRegistry);
     const ID: &'static str = "CMDRenderer";
     const TYPE: SystemType = SystemType::Postprocessor;
     
@@ -33,7 +32,6 @@ impl System for CMDRenderer{
             buffer: vec![CMD_CELL_DEFAULT; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             z_buffer: vec![f32::INFINITY; CMD_SIZE_DEFAULT.0 * CMD_SIZE_DEFAULT.1],
             size: CMD_SIZE_DEFAULT,
-            can_resize: true,
             
             #[cfg(feature = "cmd_render_test")]
             profiler: CMDRendererProfiler::new()
@@ -41,12 +39,13 @@ impl System for CMDRenderer{
     }
     
     fn execute(&mut self, _data: Request<'_, Self::Data<'_>>) {
-        use crossterm::{cursor, style, terminal};
+        use crossterm::{cursor, style};
         use crossterm::{execute, queue};
         use std::io::{stdout, Write};
         
         #[cfg(not(feature = "cmd_render_test"))]
         let (
+            cmd_data,
             mut render_queue,
             sprite_registry
         ) = _data.into_raw();
@@ -65,20 +64,8 @@ impl System for CMDRenderer{
         
         let mut lock = stdout().lock();
         
-        if self.can_resize{
-            // Get Screen size
-            let cmd_size = match terminal::size(){
-                Ok(size) => {
-                    (size.0 as usize, size.1 as usize)
-                },
-                Err(_) => {
-                    eprint!("ERROR: Couldn't get Terminal size. Defaulting to {:?}. Resize your terminal accordingly", CMD_SIZE_DEFAULT);
-                    std::thread::sleep(std::time::Duration::from_secs(5));
-                    self.can_resize = false;
-                    CMD_SIZE_DEFAULT
-                },
-            };
-            
+        if cmd_data.can_resize(){
+            let cmd_size = cmd_data.get_size();
             // Here to prevent unnecessary memory changes
             if self.size != cmd_size{
                 self.buffer.resize(cmd_size.0 * cmd_size.1, CMD_CELL_DEFAULT);

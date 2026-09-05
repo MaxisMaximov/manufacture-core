@@ -5,35 +5,55 @@ use types::*;
 
 // -- Re-exports --
 pub use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
-/// # User input -- CMD
-/// Stores the input provided by the Command Line
+
+const CMD_KEY_DEFAULT: KeyEvent = KeyEvent::new(KeyCode::Null, KeyModifiers::NONE);
+
+/// # Command Line Terminal data
+/// Stores data about the Terminal, 
+/// such as key pressed, current size and whether the screen can resize
 /// 
 /// See `crossterm`'s `KeyEvent` for more
 /// 
 /// TODO: Remove dependency on Crossterm
-pub struct CMDInput{
-    key: KeyEvent
+pub struct CMDData{
+    key: KeyEvent,
+    size: (usize, usize),
+    can_resize: bool
 }
-impl CMDInput{
+impl CMDData{
     /// Get the current key
-    pub fn get(&self) -> KeyEvent {
+    pub fn get_key(&self) -> KeyEvent {
         self.key
     }
+    pub fn get_size(&self) -> (usize, usize){
+        self.size
+    }
+    pub fn can_resize(&self) -> bool{
+        self.can_resize
+    }
     /// Set the current key
-    pub(crate) fn set(&mut self, key: KeyEvent){
+    pub(crate) fn set_key(&mut self, key: KeyEvent){
         self.key = key
     }
+    pub(crate) fn set_size(&mut self, size: (usize, usize)){
+        self.size = size
+    }
     /// Set key back to Null
-    pub(crate) fn reset(&mut self){
-        self.key = KeyEvent::new(KeyCode::Null, KeyModifiers::NONE)
+    pub(crate) fn reset_key(&mut self){
+        self.key = CMD_KEY_DEFAULT
+    }
+    pub(crate) fn set_resize(&mut self, b: bool){
+        self.can_resize = b
     }
 }
-impl Resource for CMDInput{
+impl Resource for CMDData{
     const ID: &'static str = "CMDInputData";
 
     fn new() -> Self {
         Self{
-            key: KeyEvent::new(KeyCode::Null, KeyModifiers::NONE),
+            key: CMD_KEY_DEFAULT,
+            size: systems::CMD_SIZE_DEFAULT,
+            can_resize: true
         }
     }
 }
@@ -42,6 +62,8 @@ impl Resource for CMDInput{
 /// Hold the position of the camera for `CMDRenderer`
 /// 
 /// Note: Multiple cameras are unsupported right now
+/// 
+/// Note: Currently the camera can only point downwards pointing towards +Y
 pub struct CMDCamera{
     pub pos: Vector2
 }

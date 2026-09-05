@@ -26,12 +26,12 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     world.register_event::<events::EntityDespawned>();
 
     // -- Resources --
-    world.register_res::<resources::CMDInput>();
+    world.register_res::<resources::CMDData>();
     world.register_res::<resources::CMDSpriteRegistry>();
     world.register_res::<resources::CMDRenderQueue>();
 
     // -- Systems --
-    disp_build.add::<systems::CMDInputGetter>();
+    disp_build.add::<systems::CMDDataGetter>();
     disp_build.add::<systems::CMDRenderer>();
 
     #[cfg(feature = "cmd_render_test")]
