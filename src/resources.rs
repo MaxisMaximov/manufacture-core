@@ -6,7 +6,7 @@ use types::*;
 // -- Re-exports --
 pub use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
 
-const CMD_KEY_DEFAULT: KeyEvent = KeyEvent::new(KeyCode::Null, KeyModifiers::NONE);
+pub(crate) const CMD_KEY_DEFAULT: KeyEvent = KeyEvent::new(KeyCode::Null, KeyModifiers::NONE);
 
 /// # Command Line Terminal data
 /// Stores data about the Terminal, 
@@ -16,9 +16,9 @@ const CMD_KEY_DEFAULT: KeyEvent = KeyEvent::new(KeyCode::Null, KeyModifiers::NON
 /// 
 /// TODO: Remove dependency on Crossterm
 pub struct CMDData{
-    key: KeyEvent,
-    size: (usize, usize),
-    can_resize: bool
+    pub(crate) key: KeyEvent,
+    pub(crate) size: (usize, usize),
+    pub(crate) can_resize: bool
 }
 impl CMDData{
     /// Get the current key
@@ -30,20 +30,6 @@ impl CMDData{
     }
     pub fn can_resize(&self) -> bool{
         self.can_resize
-    }
-    /// Set the current key
-    pub(crate) fn set_key(&mut self, key: KeyEvent){
-        self.key = key
-    }
-    pub(crate) fn set_size(&mut self, size: (usize, usize)){
-        self.size = size
-    }
-    /// Set key back to Null
-    pub(crate) fn reset_key(&mut self){
-        self.key = CMD_KEY_DEFAULT
-    }
-    pub(crate) fn set_resize(&mut self, b: bool){
-        self.can_resize = b
     }
 }
 impl Resource for CMDData{

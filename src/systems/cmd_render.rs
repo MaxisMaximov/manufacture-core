@@ -52,6 +52,7 @@ impl System for CMDRenderer{
         
         #[cfg(feature = "cmd_render_test")]
         let (
+            cmd_data,
             delta_t,
             mut render_queue,
             sprite_registry
@@ -151,8 +152,8 @@ impl CMDRenderer{
     /// Clear buffer
     #[inline(always)]
     fn clear_buffer(&mut self){
-        self.buffer.iter_mut().for_each(|cell| *cell = CMD_CELL_DEFAULT);
-        self.z_buffer.iter_mut().for_each(|cell| *cell = f32::INFINITY);
+        self.buffer.fill(CMD_CELL_DEFAULT);
+        self.z_buffer.fill(f32::INFINITY);
     }
     /// Plot a _'pixel'_ at `(x, y)`
     #[inline(always)]
@@ -165,8 +166,8 @@ impl CMDRenderer{
         self.buffer[coords] = (chr, fg, bg);
         }
     }
-    #[inline(always)]
     /// Convert Normalized Device Coordinates to ScreenSpace coordinates
+    #[inline(always)]
     fn ndc_to_ss(&mut self, pos: NDCoords) -> SSCoords{
         // Shift, correct, and fract(?)
         let x = ((pos.0 + 1.0) * 0.5 * (self.size.0-1) as f32) as isize;
@@ -174,8 +175,8 @@ impl CMDRenderer{
         let y = ((pos.1 * -1.0 + 1.0) * 0.5 * (self.size.1-1) as f32) as isize;
         (x, y)
     }
+    /// Check if coordinate is in bounds of the screen
     #[inline(always)]
-    /// Check if coordinate is in bounds
     fn inbounds_ndc(&self, pos: NDCoords) -> bool{
         pos.0 >= 0.0 && pos.1 >= 0.0 && pos.0 <= 1.0 && pos.1 <= 1.0
     }

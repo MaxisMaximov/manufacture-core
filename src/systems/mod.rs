@@ -34,22 +34,22 @@ impl System for CMDDataGetter{
 
         if poll(std::time::Duration::from_millis(0)).unwrap(){
             if let Event::Key(key) = read().unwrap(){
-                data.set_key(key)
+                data.key = key
             }
         }else{
-            data.reset_key();
+            data.key = CMD_KEY_DEFAULT;
         }
 
         if data.can_resize(){
             match terminal::size(){
                 Ok(size) => {
-                    data.set_size((size.0 as usize, size.1 as usize));
+                    data.size = (size.0 as usize, size.1 as usize);
                 },
                 Err(_) => {
                     eprint!("ERROR: Couldn't get Terminal size. Defaulting to {:?}. Resize your terminal accordingly", CMD_SIZE_DEFAULT);
                     std::thread::sleep(std::time::Duration::from_secs(5));
-                    data.set_resize(false);
-                    data.set_size(CMD_SIZE_DEFAULT);
+                    data.can_resize = false;
+                    data.size = CMD_SIZE_DEFAULT;
                 },
             };
         }

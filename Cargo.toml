@@ -1,6 +1,6 @@
 [package]
 name = "manufacture_core"
-version = "0.5.0"
+version = "1.0.0"
 authors = ["Maxis Maximov Jr."]
 edition = "2024"
 
