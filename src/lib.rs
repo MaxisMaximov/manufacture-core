@@ -29,6 +29,7 @@ pub fn init(world: &mut World, disp_build: &mut DispatcherBuilder){
     world.register_res::<resources::CMDData>();
     world.register_res::<resources::CMDSpriteRegistry>();
     world.register_res::<resources::CMDRenderQueue>();
+    world.register_res::<resources::CMDCamera>();
 
     // -- Systems --
     disp_build.add::<systems::CMDDataGetter>();
