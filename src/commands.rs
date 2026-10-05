@@ -20,7 +20,7 @@ impl Command for Spawn{
 /// Send a Command to spawn a new Entity with Components
 /// 
 /// Creates a new Entity using the Prefab's instructions and sends an Event with the Entity's Token
-pub struct SpawnPrefab<T: EntityPrefab>(T);
+pub struct SpawnPrefab<T: EntityPrefab>(pub T);
 impl<T: EntityPrefab + 'static> Command for SpawnPrefab<T>{
     fn execute(&mut self, world: &mut World) {
         let builder = world.spawn();
