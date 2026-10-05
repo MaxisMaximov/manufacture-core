@@ -96,7 +96,7 @@ pub trait Tag{
 /// TODO: Add varying origin point
 pub struct CMDSprite{
     pub id: String,
-    pub z_index: u16,
+    pub z_index: f32,
 }
 impl Component for CMDSprite{
     type STORAGE = BTreeMapStorage<Self>;
